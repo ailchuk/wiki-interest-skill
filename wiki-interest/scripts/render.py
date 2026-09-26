@@ -11,10 +11,11 @@ from fpdf import FPDF  # noqa: E402
 from fpdf.fonts import FontFace  # noqa: E402
 from matplotlib.ticker import FuncFormatter  # noqa: E402
 
-from i18n import pct, t  # noqa: E402
+import fonts  # noqa: E402
+from i18n import RTL_LANGS, chart_lang, pct, t  # noqa: E402
 
 FONT_DIR = Path(matplotlib.get_data_path()) / "fonts" / "ttf"
-FONTS = {"": "DejaVuSans.ttf", "B": "DejaVuSans-Bold.ttf", "I": "DejaVuSans-Oblique.ttf",
+DEJAVU = {"": "DejaVuSans.ttf", "B": "DejaVuSans-Bold.ttf", "I": "DejaVuSans-Oblique.ttf",
          "BI": "DejaVuSans-BoldOblique.ttf"}
 
 # Validated light palette (dataviz skill): languages keep their color in the order the user listed them.
@@ -153,7 +154,9 @@ def _md(line):
     return line.replace("**", "") if line.count("**") % 2 else line
 
 
-PCT_RE = re.compile(r"(?<![\w.,])([+\-−–]?\s?\d+(?:[.,]\d+)?)\s?%")
+PCT_RE = re.compile(r"(?<![\d.,])([+-]?\s?\d+(?:[.,]\d+)?)\s?%")
+# Arabic-Indic, Persian and full-width digits/percent signs, unicode minus -> ASCII, so every number gets checked.
+NORMALIZE = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹０１２３４５６７８９٪％٫−–－", "0123456789" * 3 + "%%.---")
 MONTHS_RE = re.compile(r"(?<!\d)(\d{1,2})\s?/\s?12(?!\d)")
 
 
@@ -165,10 +168,10 @@ def check_numbers(doc, run):
     allowed |= {abs(round(y[k] * 100)) for r in rows for y in r["metrics"].get("yearly", [])
                 for k in ("growth_clean", "adj_growth") if y[k] is not None}
     months = {r["metrics"][k] for r in rows for k in ("months_up", "months_down")}
-    text = "\n".join(line for s in doc["sections"] for line in s["lines"])
+    text = "\n".join(line for s in doc["sections"] for line in s["lines"]).translate(NORMALIZE)
     bad = []
     for m in PCT_RE.finditer(text):
-        v = abs(float(m.group(1).replace("−", "-").replace("–", "-").replace(" ", "").replace(",", ".")))
+        v = abs(float(m.group(1).replace(" ", "").replace(",", ".")))
         if not any(abs(v - a) <= 1 for a in allowed):
             bad.append(f"'{m.group(0).strip()}' is not in the data")
     for m in MONTHS_RE.finditer(text):
@@ -191,7 +194,8 @@ def allowed_values(run):
 
 
 def unsupported_chars(text):
-    cmap = TTFont(FONT_DIR / FONTS[""]).getBestCmap()
+    with TTFont(FONT_DIR / DEJAVU[""], lazy=True) as font:
+        cmap = font.getBestCmap()
     return sorted({ch for ch in text if ch.strip() and ord(ch) not in cmap})
 
 
@@ -256,26 +260,39 @@ def _heading(h, lang):
     return t(lang, key) if key else h
 
 
-def _build(run, doc, charts_paths, lang, s, created):
+def _build(run, doc, charts_paths, lang, s, created, extra):
+    """extra: [(font key, path)] fallback fonts for scripts DejaVu lacks."""
     pdf = FPDF(format="A4")
     pdf.set_margins(12, 10, 12)
     pdf.set_auto_page_break(True, 8)
-    for style, file in FONTS.items():
+    for style, file in DEJAVU.items():
         pdf.add_font("DejaVu", style, str(FONT_DIR / file))
+    for key, path in extra:
+        weight = fonts.FONTS[key][3]
+        pdf.add_font(key, "", str(path), variations={"wght": weight} if weight else None)
+    if extra:
+        pdf.set_fallback_fonts([key for key, _ in extra], exact_match=False)
+    if any(key in fonts.SHAPED for key, _ in extra):
+        pdf.set_text_shaping(True)
+    align = "R" if lang in RTL_LANGS else "L"
     pdf.add_page()
 
     def text(size, body, style="", color=(0, 0, 0), h=None, md=False):
         pdf.set_font("DejaVu", style, size * s)
         pdf.set_text_color(*color)
-        pdf.multi_cell(0, h or size * s * 0.48, body, markdown=md, align="L", new_x="LMARGIN", new_y="NEXT")
+        pdf.multi_cell(0, h or size * s * 0.48, body, markdown=md, align=align, new_x="LMARGIN", new_y="NEXT")
 
     def bullets(items, size, color=(0, 0, 0)):
         pdf.set_font("DejaVu", "", size * s)
         pdf.set_text_color(*color)
         for item in items:
+            body = _md(BULLET_RE.sub("", item))
+            if align == "R":  # right-to-left: the bullet goes to the right edge together with the text
+                pdf.multi_cell(0, size * s * 0.47, "• " + body, markdown=True, align="R", new_x="LMARGIN", new_y="NEXT")
+                continue
             pdf.set_x(14)
             pdf.cell(3, size * s * 0.47, "•")
-            pdf.multi_cell(PAGE_W - 5, size * s * 0.47, _md(BULLET_RE.sub("", item)), markdown=True, align="L",
+            pdf.multi_cell(PAGE_W - 5, size * s * 0.47, body, markdown=True, align="L",
                            new_x="LMARGIN", new_y="NEXT")
 
     text(15, doc["title"] or run["label"], "B", h=15 * s * 0.5)
@@ -330,16 +347,43 @@ def _build(run, doc, charts_paths, lang, s, created):
 SCALES = (1.0, 0.94, 0.88, 0.82, 0.76)
 
 
+def _all_text(run, doc, lang):
+    head, body = _table_rows(run, lang)
+    parts = [doc["title"], doc["question_label"], doc["question"]]
+    parts += [x for sec in doc["sections"] for x in [sec["heading"]] + sec["lines"]]
+    parts += _assumptions(run, lang) + _limitations(run, lang) + [c for row in [head] + body for c in row]
+    parts += [t(lang, k) for k in ("findings", "recommendation", "next_steps", "assumptions", "limitations",
+                                   "question", "generated", "reproduce")]
+    return "\n".join(p for p in parts if p)
+
+
+def prepare_fonts(text, lang):
+    """Download fallback fonts the text needs. Returns ([(key, path)], warnings)."""
+    extra, warnings = [], []
+    for key in fonts.needed(text, lang):
+        try:
+            extra.append((key, fonts.path(key)))
+        except fonts.FontError as e:
+            warnings.append(f"font for {key} unavailable ({e}); those characters will be blank")
+    left = set(unsupported_chars(text))
+    for key, _ in extra:
+        left -= fonts.covers(key, "".join(left))
+    if left:
+        warnings.append(f"no font draws {''.join(sorted(left)[:20])}; those characters will be blank")
+    return extra, warnings
+
+
 def report(run, doc, out_pdf, lang, created):
-    """Render the one-page PDF. Returns the scale used; raises ValueError if it cannot fit one page."""
+    """Render the one-page PDF. Returns (scale used, font warnings); raises ValueError if it cannot fit one page."""
     out_pdf = Path(out_pdf)
     chart_dir = out_pdf.parent / f"charts_{lang}"
     chart_dir.mkdir(parents=True, exist_ok=True)
-    paths = charts(run, chart_dir, lang)
+    paths = charts(run, chart_dir, chart_lang(lang))
+    extra, warnings = prepare_fonts(_all_text(run, doc, lang), lang)
     for s in SCALES:
-        pdf = _build(run, doc, paths, lang, s, created)
+        pdf = _build(run, doc, paths, lang, s, created, extra)
         if pdf.pages_count == 1:
             pdf.output(str(out_pdf))
-            return s
+            return s, warnings
     raise ValueError("findings do not fit on one page even at 76% text size: keep 3-5 short bullets and a "
                      "2-3 sentence recommendation")

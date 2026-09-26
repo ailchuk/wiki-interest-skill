@@ -11,7 +11,7 @@ from pathlib import Path
 import metrics
 import render
 import wikiapi
-from i18n import lang_or_en, pct, reason
+from i18n import LANGS, chart_lang, lang_or_en, pct, reason
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 WI = f"bash {SKILL_DIR}/scripts/wi"
@@ -175,17 +175,13 @@ def cmd_report(args):
         print("Fix findings.md and run report again. Use --force only for numbers that are not metrics "
               "(e.g. the user's own targets).")
         return 3
-    titles = " ".join(r["title"] or "" for r in run["rows"])
-    missing = render.unsupported_chars(ftext + titles)
-    if missing:
-        print(f"WARNING: the PDF font cannot draw {''.join(missing[:20])} (e.g. CJK, Arabic, Devanagari); "
-              "they will be blank. Write findings in a Latin, Cyrillic or Greek script language.")
-
     lang = lang_or_en(args.lang)
     out = Path(args.out) if args.out else run_dir / f"report_{lang}.pdf"
-    scale = render.report(run, doc, out, lang, date.today().isoformat())
+    scale, warnings = render.report(run, doc, out, lang, date.today().isoformat())
+    for w in warnings:
+        print(f"WARNING: {w}")
     print(f"PDF: {out.resolve()} (1 page, labels: {lang}, text size {round(scale * 100)}%)")
-    print(f"Charts in {lang}: {out.parent.resolve() / f'charts_{lang}'}")
+    print(f"Charts: {out.parent.resolve() / f'charts_{lang}'} (labels: {chart_lang(lang)})")
     print("Numbers check: skipped (--force)." if args.force else
           "Numbers check: every percentage and N/12 in findings matches the data.")
     return 0
@@ -298,7 +294,7 @@ def _summary(run, out):
         f"Files: {out}/ (metrics.json, monthly.csv, trend.png, growth.png)",
         f"Rerun or change one parameter: {run['command']}",
         f"Report: write findings.md (template in SKILL.md), then: {WI} report {out} --findings findings.md "
-        "--lang <uk for Ukrainian users, en for everyone else>",
+        f"--lang <user's language: {' '.join(LANGS)}; others: en>",
     ]
     return "\n".join(lines) + "\n"
 
@@ -330,7 +326,7 @@ def build_parser():
     r = sub.add_parser("report", help="One-page PDF from an analyze run and the agent's findings.md.")
     r.add_argument("run_dir", help="Run folder printed by analyze (contains metrics.json).")
     r.add_argument("--findings", required=True, help="Markdown with title, Question:, ## sections (see SKILL.md).")
-    r.add_argument("--lang", default="en", help="Language of fixed labels: uk or en (others fall back to en).")
+    r.add_argument("--lang", default="en", help="Language of fixed labels, e.g. uk, pl, ja, ar (unknown -> en).")
     r.add_argument("--out", help="PDF path (default: <run_dir>/report_<lang>.pdf).")
     r.add_argument("--force", action="store_true", help="Skip the numbers check.")
     r.set_defaults(func=cmd_report)

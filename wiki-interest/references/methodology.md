@@ -47,7 +47,10 @@ Default: by adjusted growth; LOW-confidence languages go last. Confidence only d
 
 - `report` compares every percentage and `N/12` in `findings.md` (except the `Question:` line) with the run's metrics, tolerance +-1 point. Mismatch = no PDF; `--force` skips the check.
 - Always one A4 page: text shrinks down to 76%, otherwise `report` fails and asks for shorter findings.
-- Font: DejaVu Sans (bundled with matplotlib). Covers Latin, Cyrillic, Greek; CJK, Arabic, Devanagari produce a warning.
+- Labels (table, assumptions, limitations): `scripts/locales/<lang>.json` for en, uk, pl, cs, de, es, fr, pt, tr, vi, ja, zh, ar, hi; other languages get English. Texts other than English and Ukrainian were machine-translated and not reviewed by native speakers.
+- Fonts: DejaVu Sans (bundled with matplotlib) for Latin, Cyrillic, Greek. For CJK, Arabic, Hebrew, Devanagari, Bengali and Thai, `scripts/fonts.py` downloads the needed Noto font on first use from a pinned commit, checks its SHA-256 and caches it in `~/.cache/wiki-interest/fonts/`. Arabic, Hebrew and Indic text is shaped with HarfBuzz (`uharfbuzz`); Arabic reports are right-aligned.
+- Charts use the report language only for Latin/Cyrillic scripts; otherwise English (matplotlib cannot shape Arabic or Indic text).
+- The numbers check also reads Arabic-Indic and full-width digits (`٥٠٪`, `５０％`).
 
 ## Limitations
 

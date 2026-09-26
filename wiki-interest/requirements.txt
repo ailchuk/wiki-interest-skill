@@ -1,3 +1,5 @@
-# Direct dependencies, pinned. Both ship wheels for Python 3.10-3.14.
+# Direct dependencies, pinned. All ship wheels for Python 3.10-3.14.
 matplotlib==3.10.8
 fpdf2==2.8.8
+# Text shaping for Arabic, Hebrew and Indic scripts in the PDF
+uharfbuzz==0.56.2

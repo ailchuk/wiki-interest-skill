@@ -14,7 +14,9 @@ Follow-up in the same session: add `--resume <session>` (the session id is print
 | ex2 | Ми думаємо додати курс з астрономії до освітнього застосунку. Чи зростає інтерес до цієї теми в україномовній Wikipedia, і наскільки цьому зростанню можна довіряти? | Task example 2. Trust question. |
 | ex3 | Ми створюємо застосунок для вивчення мов. Порівняй інтерес до вивчення англійської у вибраних нами мовних розділах (польська, іспанська, німецька, турецька, в'єтнамська, українська) та підготуй короткий звіт: які аудиторії варто дослідити наступними й чому? | Task example 3 + PDF. Languages added: in `-p` mode the model cannot ask which ones. |
 | ex3-follow | Додай португальську і візьми період 3 роки. Що змінилось? | Follow-up: rerun with changed parameters, cache. |
-| pl | Czy zainteresowanie astronomią rośnie w polskiej i czeskiej Wikipedii? Przygotuj krótki raport PDF. | Request in another language, PDF with English labels. |
+| pl | Czy zainteresowanie astronomią rośnie w polskiej i czeskiej Wikipedii? Przygotuj krótki raport PDF. | Request in another language, PDF with Polish labels. |
+| ja | ポーランド語版とチェコ語版のウィキペディアで、天文学への関心は高まっていますか？短いPDFレポートを作ってください。 | CJK request, PDF with a downloaded Noto font. |
+| ar | هل يتزايد الاهتمام بعلم الفلك في ويكيبيديا العربية والتركية؟ أعد تقريرًا قصيرًا بصيغة PDF. | Right-to-left request, shaped Arabic PDF. |
 
 ## Checklist per run
 

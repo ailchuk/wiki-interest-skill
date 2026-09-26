@@ -14,6 +14,13 @@ Prompts and checklist: [prompts.md](prompts.md). Each run starts in a fresh work
 
 Every run: skill triggered on the first call, no invented article titles, every number traceable to `analyze` output, PDFs one page.
 
+## Other scripts (after adding PDF labels in 14 languages)
+
+| Case | Tool calls | Time | Cost | Result |
+|---|---|---|---|---|
+| ja (Japanese prompt + PDF) | 5 | 43 s | $0.058 | Pass. Answer in Japanese, `--lang ja`, Noto Sans JP downloaded once, numbers check passed. |
+| ar (Arabic prompt + PDF) | 5 | 39 s | $0.060 | Pass. Answer in Arabic, `--lang ar`, right-to-left shaped PDF ([example](examples/ar-astronomy-report.pdf)); -40% / -49% adjusted match the data. Limitations only in the PDF, not in the chat answer. |
+
 ## What the rounds changed
 
 | Round | Problem seen | Fix |
@@ -35,4 +42,4 @@ Every run: skill triggered on the first call, no invented article titles, every 
 
 ## Totals
 
-21 Haiku runs in 6 rounds, $1.48 in total, 22-61 s and 1-6 tool calls per question.
+23 Haiku runs in 7 rounds, $1.60 in total, 22-61 s and 1-6 tool calls per question.

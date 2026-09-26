@@ -1,7 +1,7 @@
 ---
 name: wiki-interest
 description: Measures and compares public interest in a topic across Wikipedia language editions from Wikimedia pageview data - growth, trust level, charts and a one-page PDF report. Use when the user asks whether interest in a topic is growing, compares interest between languages or markets, decides which course, topic or language to launch or localize next, or wants a Wikipedia-based trend report. Requests may be in any language, e.g. Ukrainian "інтерес до теми", "Вікіпедія", "мовні розділи", "порівняй зростання інтересу", "чи зростає інтерес".
-compatibility: Requires bash, Python 3.10+ and internet access to Wikimedia APIs. The first run installs matplotlib and fpdf2 into the skill's .venv (1-2 min).
+compatibility: Requires bash, Python 3.10+ and internet access to Wikimedia APIs. The first run installs matplotlib, fpdf2 and uharfbuzz into the skill's .venv (1-2 min); PDFs in CJK, Arabic or Indic scripts download a Noto font on first use.
 ---
 
 # Wikipedia interest research
@@ -57,6 +57,6 @@ Question: <the user's question>
 
 Keep `Question:` as a plain line; use `-` bullets. Limitations and assumptions are added to the PDF automatically.
 
-Then run `bash <skill-dir>/scripts/wi report <run-dir> --findings findings.md --lang uk` (`--lang uk` or `en`; other languages get English labels). The run dir is printed by `analyze`. If `report` lists numbers that do not match the data, fix `findings.md` and run it again. Give the user the PDF path.
+Then run `bash <skill-dir>/scripts/wi report <run-dir> --findings findings.md --lang <code>` with the user's language: `en uk pl cs de es fr pt tr vi ja zh ar hi` (others get English labels). The run dir is printed by `analyze`. Fonts for Chinese, Japanese, Korean, Arabic, Hebrew and Indic scripts download automatically on first use. If `report` lists numbers that do not match the data, fix `findings.md` and run it again. Give the user the PDF path.
 
 Metric details and thresholds: [references/methodology.md](references/methodology.md).
