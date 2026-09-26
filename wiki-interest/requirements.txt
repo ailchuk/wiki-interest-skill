@@ -1,0 +1,3 @@
+# Direct dependencies, pinned. Both ship wheels for Python 3.10-3.14.
+matplotlib==3.10.8
+fpdf2==2.8.8
