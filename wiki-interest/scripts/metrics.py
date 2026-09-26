@@ -9,6 +9,8 @@ from statistics import median
 SPIKE_FACTOR = 3.0     # a day is a spike if views > 3x its local median...
 SPIKE_MIN_EXCESS = 30  # ...and at least 30 views above it (ignores noise at tiny volumes)
 SPIKE_WINDOW = 14      # local median = median of +-14 days
+SPIKE_WARMUP = SPIKE_WINDOW  # days fetched before the period so its first days get a full window
+DATA_START = "2015-07"  # Wikimedia pageviews start here; earlier months hold no data, not zero interest
 LOW_VOLUME = 20        # views/day below this -> LOW confidence
 HIGH_VOLUME = 100      # views/day needed for HIGH confidence
 FLAT = 0.05            # |change| below 5% counts as flat
@@ -72,17 +74,25 @@ def sign(x):
     return 1 if x > 0 else -1
 
 
-def analyze_series(daily, wiki_monthly, months):
+def analyze_series(daily, wiki_monthly, months, warmup=0):
     """Metrics for one article.
 
     daily: {'YYYYMMDD': views} (missing days = 0); wiki_monthly: {'YYYY-MM': views of the
     whole Wikipedia}; months: >= 24 complete months, oldest first.
+
+    warmup: days present in `daily` before the period. Spikes are detected over the longer
+    series and the warm-up is then dropped, so the metrics do not depend on how far back the
+    caller asked. Without it the first days of the baseline year get a truncated median window.
     """
     if len(months) < 24:
         raise ValueError("need at least 24 months: growth compares the last 12 months with the previous 12")
-    days = _days(month_bounds(months[0])[0], month_bounds(months[-1])[1])
+    start = month_bounds(months[0])[0]
+    days = _days(start - timedelta(days=warmup), month_bounds(months[-1])[1])
     values = [daily.get(d.strftime("%Y%m%d"), 0) for d in days]
     cleaned, spike_idx, medians = detect_spikes(values)
+    if warmup:
+        days, values, cleaned, medians = days[warmup:], values[warmup:], cleaned[warmup:], medians[warmup:]
+        spike_idx = [i - warmup for i in spike_idx if i >= warmup]
 
     monthly = {m: 0 for m in months}
     monthly_clean = {m: 0.0 for m in months}

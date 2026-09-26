@@ -158,25 +158,75 @@ PCT_RE = re.compile(r"(?<![\d.,])([+-]?\s?\d+(?:[.,]\d+)?)\s?%")
 # Arabic-Indic, Persian and full-width digits/percent signs, unicode minus -> ASCII, so every number gets checked.
 NORMALIZE = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹０１２３４５６７８９٪％٫−–－", "0123456789" * 3 + "%%.---")
 MONTHS_RE = re.compile(r"(?<!\d)(\d{1,2})\s?/\s?12(?!\d)")
+DATE_RE = re.compile(r"\d{4}-\d{2}(?:-\d{2})?")
+NUM_RE = re.compile(r"(?<![\w.,])(\d{1,3}(?:[ ,'\u00a0\u202f]\d{3})+|\d+(?:[.,]\d+)?)(?![\w.,])")
+GROUPED_RE = re.compile(r"\d{1,3}(?:[ ,]\d{3})+")
+MIN_CHECKED = 10  # below this a number is almost always a count of languages or bullets, not data
+
+
+def _number(token):
+    token = token.replace("\u00a0", " ").replace("\u202f", " ").replace("'", "")
+    if GROUPED_RE.fullmatch(token):
+        return float(token.replace(" ", "").replace(",", ""))
+    return float(token.replace(",", "."))
+
+
+def _percents(run):
+    """Signed rounded percentages the data supports."""
+    out = set()
+    for r in run["rows"]:
+        if r["status"] != "ok":
+            continue
+        m = r["metrics"]
+        out |= {round(m[k] * 100) for k in ("growth", "growth_clean", "adj_growth", "wiki_growth")
+                if m[k] is not None}
+        out |= {round(y[k] * 100) for y in m.get("yearly", [])
+                for k in ("growth_clean", "adj_growth") if y[k] is not None}
+    return out
+
+
+def _counts(run):
+    """Plain numbers the tool prints: views/day, spike days, month counts and years of the period."""
+    out = {12.0, float(len(run["months"]))}
+    out |= {float(m[:4]) for m in run["months"]}
+    for r in run["rows"]:
+        if r["status"] != "ok":
+            continue
+        m = r["metrics"]
+        out |= {m["views_per_day"], float(m["months_up"]), float(m["months_down"])}
+        out |= {float(s["views"]) for s in m["top_spikes"]} | {float(s["times"]) for s in m["top_spikes"]}
+    return out
 
 
 def check_numbers(doc, run):
-    """Percentages and 'N/12' in findings must match the data (+-1 point). Returns mismatch messages."""
-    rows = [r for r in run["rows"] if r["status"] == "ok"]
-    allowed = {abs(round(r["metrics"][k] * 100)) for r in rows
-               for k in ("growth", "growth_clean", "adj_growth", "wiki_growth") if r["metrics"][k] is not None}
-    allowed |= {abs(round(y[k] * 100)) for r in rows for y in r["metrics"].get("yearly", [])
-                for k in ("growth_clean", "adj_growth") if y[k] is not None}
-    months = {r["metrics"][k] for r in rows for k in ("months_up", "months_down")}
+    """Every number in findings must come from the data. Returns mismatch messages.
+
+    Percentages written with an explicit sign must also match its direction; without a sign the
+    direction lives in the words around it ("fell by 34%"), so only the magnitude is compared.
+    """
+    pcts, counts = _percents(run), _counts(run)
+    months = {r["metrics"][k] for r in run["rows"] if r["status"] == "ok" for k in ("months_up", "months_down")}
     text = "\n".join(line for s in doc["sections"] for line in s["lines"]).translate(NORMALIZE)
     bad = []
     for m in PCT_RE.finditer(text):
-        v = abs(float(m.group(1).replace(" ", "").replace(",", ".")))
-        if not any(abs(v - a) <= 1 for a in allowed):
-            bad.append(f"'{m.group(0).strip()}' is not in the data")
+        raw = m.group(1).replace(" ", "")
+        v, shown = _number(raw.lstrip("+-")), m.group(0).strip()
+        if raw[0] in "+-":
+            v = -v if raw[0] == "-" else v
+            if not any(abs(v - a) <= 1 for a in pcts):
+                flipped = [a for a in pcts if abs(-v - a) <= 1]
+                bad.append(f"'{shown}' points the wrong way: the data says {flipped[0]:+d}%" if flipped
+                           else f"'{shown}' is not in the data")
+        elif not any(abs(v - abs(a)) <= 1 for a in pcts):
+            bad.append(f"'{shown}' is not in the data")
     for m in MONTHS_RE.finditer(text):
         if int(m.group(1)) not in months:
             bad.append(f"'{m.group(0)}' is not in the data")
+    plain = MONTHS_RE.sub(" ", PCT_RE.sub(" ", DATE_RE.sub(" ", text)))
+    for m in NUM_RE.finditer(plain):
+        v = _number(m.group(1))
+        if v >= MIN_CHECKED and not any(abs(v - a) <= max(1.0, 0.1 * a) for a in counts):
+            bad.append(f"'{m.group(1)}' is not a number the tool printed")
     return bad
 
 
@@ -187,9 +237,12 @@ def allowed_values(run):
             m = r["metrics"]
             years = "".join(f"; {y['period']}: w/o spikes {pct(y['growth_clean'])}, adjusted {pct(y['adj_growth'])}"
                             for y in m.get("yearly", [])[:-1])
+            spikes = "".join(f"; spike {s['date']}: {s['views']} views, {s['times']}x normal"
+                             for s in m["top_spikes"])
             out.append(f"{r['code']}: growth {pct(m['growth'])}, w/o spikes {pct(m['growth_clean'])}, "
                        f"adjusted {pct(m['adj_growth'])}, whole wiki {pct(m['wiki_growth'])}, "
-                       f"months up {m['months_up']}/12, down {m['months_down']}/12{years}")
+                       f"views/day {m['views_per_day']:.1f}, "
+                       f"months up {m['months_up']}/12, down {m['months_down']}/12{years}{spikes}")
     return out
 
 

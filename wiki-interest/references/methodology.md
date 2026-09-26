@@ -6,8 +6,8 @@ How `analyze` turns pageviews into metrics and a confidence level. Thresholds li
 
 - Source: [Wikimedia Pageviews API](https://doc.wikimedia.org/generated-data-platform/aqs/analytics-api/reference/page-views.html), `agent=user` (bots and crawlers excluded), `all-access` (desktop, mobile web, app).
 - Article per language: Wikidata sitelinks of the chosen item. No sitelink = `MISSING`, never guessed.
-- Period: the last N complete months (default 24, minimum 24). The current month is never used.
-- Per article: daily views. Per Wikipedia: monthly total human views (for the adjusted metric).
+- Period: the last N complete months (default 24, minimum 24). The current month is never used. Wikimedia pageviews start in 2015-07; a longer period is trimmed to that month and `analyze` says so, because months without data are not months without interest.
+- Per article: daily views, plus 14 days before the period as a warm-up for spike detection (see below). Per Wikipedia: monthly total human views (for the adjusted metric).
 - Cache: `~/.cache/wiki-interest/` (override with `WI_CACHE_DIR`). Complete months never change, so pageviews are cached forever; Wikidata and search lookups for 7 days, the list of Wikipedias for 30 days.
 
 ## Metrics (per language)
@@ -22,7 +22,7 @@ How `analyze` turns pageviews into metrics and a confidence level. Thresholds li
 | whole wiki | Growth of total human views of that Wikipedia. |
 | year by year | With `--months 36` or more: w/o-spikes and adjusted growth for every full 12-month block vs the block before, plus a label from the last two years' adjusted growth: `improving` / `worsening` (change over 5 points) or `about the same`. |
 
-**Spike:** a day with views > 3x its local median (median of +-14 days) and at least 30 views above it. Replaced by the local median. Events that last longer than about two weeks raise the median and count as real interest.
+**Spike:** a day with views > 3x its local median (median of +-14 days) and at least 30 views above it. Replaced by the local median. Events that last longer than about two weeks raise the median and count as real interest. The 14 days fetched before the period give its first days a full window, so the same question returns the same numbers whether it was asked with `--months 24` or `--months 36`. The last days of the period have no such margin; there the median is taken over the days available.
 
 ## Confidence
 
@@ -45,12 +45,21 @@ Default: by adjusted growth; LOW-confidence languages go last. Confidence only d
 
 ## Report checks
 
-- `report` compares every percentage and `N/12` in `findings.md` (except the `Question:` line) with the run's metrics, tolerance +-1 point. Mismatch = no PDF; `--force` skips the check.
+- `report` compares every number in `findings.md` (except the `Question:` line) with the run's metrics. Mismatch = no PDF; `--force` skips the check.
+  - Percentages: tolerance +-1 point. A percentage written with an explicit `+` or `-` must also match the direction, so calling a decline `+34%` is rejected. Without a sign the direction lives in the surrounding words ("fell by 34%"), so only the magnitude is compared.
+  - `N/12`: must be one of the months-up or months-down counts.
+  - Plain numbers from 10 up: must be within 10% of something the tool prints (views/day, spike-day views and multipliers, month counts, years of the period). This catches an invented audience size such as "4200 views per day" when the article has 6. Dates and numbers below 10 are ignored, since those are counts of languages or bullets rather than data.
 - Always one A4 page: text shrinks down to 76%, otherwise `report` fails and asks for shorter findings.
 - Labels (table, assumptions, limitations): `scripts/locales/<lang>.json` for en, uk, pl, cs, de, es, fr, pt, tr, vi, ja, zh, ar, hi; other languages get English. Texts other than English and Ukrainian were machine-translated and not reviewed by native speakers.
 - Fonts: DejaVu Sans (bundled with matplotlib) for Latin, Cyrillic, Greek. For CJK, Arabic, Hebrew, Devanagari, Bengali and Thai, `scripts/fonts.py` downloads the needed Noto font on first use from a pinned commit, checks its SHA-256 and caches it in `~/.cache/wiki-interest/fonts/`. Arabic, Hebrew and Indic text is shaped with HarfBuzz (`uharfbuzz`); Arabic reports are right-aligned.
 - Charts use the report language only for Latin/Cyrillic scripts; otherwise English (matplotlib cannot shape Arabic or Indic text).
 - The numbers check also reads Arabic-Indic and full-width digits (`٥٠٪`, `５０％`).
+
+## Errors
+
+Every failure is reported as a single `ERROR:` line that names the fix; the agent never sees a traceback. Exit codes separate the kinds of fix: `0` success, `1` environment (no Python 3.10+, venv could not be created), `2` wrong input (unknown language code or QID, bad `--article` or `--end`, missing file, topic not found), `3` findings do not match the data or do not fit one page, `4` network or dependency install.
+
+Partial failures never stop a run: a language without an article becomes `MISSING`, a wrong title becomes `NO VIEWS`, a font that will not download leaves a warning and blank glyphs rather than no PDF, and findings that are too long shrink to 76% before being rejected. Requests are retried five times with exponential backoff on 429 and 5xx; each wait prints a `[wi]` line so the pause is not mistaken for a hang. HTTP 404 means "no data", not an error.
 
 ## Limitations
 

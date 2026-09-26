@@ -3,9 +3,10 @@ import argparse
 import csv
 import hashlib
 import json
+import re
 import shlex
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import metrics
@@ -15,6 +16,14 @@ from i18n import LANGS, chart_lang, lang_or_en, pct, reason
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 WI = f"bash {SKILL_DIR}/scripts/wi"
+MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
+
+# Exit codes tell the agent what kind of fix is needed (1 = environment, from scripts/wi).
+EXIT_USAGE, EXIT_FINDINGS, EXIT_NETWORK = 2, 3, 4
+
+
+class UsageError(Exception):
+    """Wrong input from the agent. The message always says how to fix it."""
 
 
 def cmd_find(args):
@@ -31,7 +40,7 @@ def cmd_find(args):
     if not candidates:
         print(f'No Wikidata item found for "{args.topic}" (searched in {args.query_lang} and en).')
         print("Try an English name or a more specific term.")
-        return 1
+        return EXIT_USAGE
 
     label_langs = [args.query_lang] + [w["code"] for w in langs]
     ents = wikiapi.entities([c["qid"] for c in candidates], label_langs)
@@ -85,28 +94,41 @@ def _pick(values, lang):
 
 def cmd_analyze(args):
     if args.months < 24:
-        raise SystemExit("ERROR: --months must be >= 24 (growth compares the last 12 months with the previous 12).")
+        raise UsageError("--months must be >= 24 (growth compares the last 12 months with the previous 12).")
     overrides = {}
     for item in args.article or []:
         code, sep, title = item.partition(":")
         if not sep or not title.strip():
-            raise SystemExit(f'ERROR: --article must look like pl:"Exact Title", got {item!r}')
+            raise UsageError(f'--article must look like pl:"Exact Title", got {item!r}')
         overrides[code.strip().lower()] = title.strip()
     qid = args.qid.upper() if args.qid else None
     if not qid and not overrides:
-        raise SystemExit("ERROR: give a Wikidata QID (from `find`) or --article lang:Title.")
+        raise UsageError("give a Wikidata QID (from `find`) or --article lang:Title.")
 
     lang_spec = ",".join(filter(None, [args.langs or ""] + list(overrides)))
     wikis = wikiapi.resolve_langs(lang_spec)
     end = args.end or metrics.last_complete_month(date.today())
+    if not MONTH_RE.match(end):
+        raise UsageError(f"--end must be a month as YYYY-MM (e.g. 2026-08), got {end!r}.")
     months = metrics.month_list(end, args.months)
+    dropped = [m for m in months if m < metrics.DATA_START]
+    if dropped:
+        months = months[len(dropped):]
+        if len(months) < 24:
+            raise UsageError(f"Wikimedia pageviews start in {metrics.DATA_START}, which leaves only "
+                             f"{len(months)} months before {end}. Growth needs 24.")
+        print(f"NOTE: Wikimedia pageviews start in {metrics.DATA_START}, so {len(dropped)} earlier month(s) were "
+              f"dropped. Period is {months[0]}..{months[-1]} ({len(months)} months), not the {args.months} asked for.")
     start_day, end_day = metrics.month_bounds(months[0])[0], metrics.month_bounds(months[-1])[1]
+    # Extra days before the period so spike detection sees a full window on its first days.
+    warm_start = max(start_day - timedelta(days=metrics.SPIKE_WARMUP), metrics.month_bounds(metrics.DATA_START)[0])
+    warmup = (start_day - warm_start).days
 
     ent = {"labels": {}, "sitelinks": {}}
     if qid:
         ent = wikiapi.entities([qid], [w["code"] for w in wikis]).get(qid)
         if not ent:
-            raise SystemExit(f"ERROR: {qid} not found on Wikidata. Run find first.")
+            raise UsageError(f"{qid} not found on Wikidata. Run find first.")
     label = _pick(ent["labels"], "en") if ent["labels"] else "custom articles"
 
     rows = []
@@ -118,12 +140,12 @@ def cmd_analyze(args):
         if not row["title"]:
             row["status"] = "missing"
             continue
-        daily = wikiapi.article_daily(w["project"], row["title"], start_day, end_day)
+        daily = wikiapi.article_daily(w["project"], row["title"], warm_start, end_day)
         if not sum(daily.values()):
             row["status"] = "no_views"
             continue
         wiki_monthly = wikiapi.project_monthly(w["project"], start_day, end_day)
-        m = metrics.analyze_series(daily, wiki_monthly, months)
+        m = metrics.analyze_series(daily, wiki_monthly, months, warmup)
         m["wiki_monthly"] = wiki_monthly
         row["metrics"] = m
         row["confidence"], row["reasons"] = metrics.confidence(m)
@@ -131,7 +153,7 @@ def cmd_analyze(args):
     rows = metrics.rank(rows, args.sort)
 
     cmd = [WI, "analyze"] + ([qid] if qid else []) + ["--langs", ",".join(w["code"] for w in wikis),
-                                                       "--months", str(args.months), "--end", end]
+                                                       "--months", str(len(months)), "--end", end]
     cmd += [f"--article={shlex.quote(f'{c}:{t}')}" for c, t in overrides.items()]
     if args.sort != "confidence":
         cmd += ["--sort", args.sort]
@@ -159,12 +181,12 @@ def cmd_report(args):
     run_dir = Path(args.run_dir)
     mfile = run_dir / "metrics.json"
     if not mfile.exists():
-        raise SystemExit(f"ERROR: {mfile} not found. Pass the run folder printed by `analyze`.")
+        raise UsageError(f"{mfile} not found. Pass the run folder printed by `analyze`.")
     run = json.loads(mfile.read_text("utf-8"))
     ftext = Path(args.findings).read_text("utf-8")
     doc = render.parse_findings(ftext)
     if not doc["sections"]:
-        raise SystemExit("ERROR: findings.md has no sections. Use the template in SKILL.md.")
+        raise UsageError("findings.md has no sections. Use the template in SKILL.md.")
 
     bad = render.check_numbers(doc, run)
     if bad and not args.force:
@@ -174,16 +196,20 @@ def cmd_report(args):
         print("\n".join(f"- {v}" for v in render.allowed_values(run)))
         print("Fix findings.md and run report again. Use --force only for numbers that are not metrics "
               "(e.g. the user's own targets).")
-        return 3
+        return EXIT_FINDINGS
     lang = lang_or_en(args.lang)
     out = Path(args.out) if args.out else run_dir / f"report_{lang}.pdf"
-    scale, warnings = render.report(run, doc, out, lang, date.today().isoformat())
+    try:
+        scale, warnings = render.report(run, doc, out, lang, date.today().isoformat())
+    except ValueError as e:
+        print(f"PDF not created: {e}")
+        return EXIT_FINDINGS
     for w in warnings:
         print(f"WARNING: {w}")
     print(f"PDF: {out.resolve()} (1 page, labels: {lang}, text size {round(scale * 100)}%)")
     print(f"Charts: {out.parent.resolve() / f'charts_{lang}'} (labels: {chart_lang(lang)})")
     print("Numbers check: skipped (--force)." if args.force else
-          "Numbers check: every percentage and N/12 in findings matches the data.")
+          "Numbers check: every percentage, N/12 and plain number in findings matches the data, signs included.")
     return 0
 
 
@@ -337,12 +363,16 @@ def main(argv=None):
     args = build_parser().parse_args(argv)
     if args.command == "find" and not (args.topic or args.qid):
         print("ERROR: give a topic or --qid.", file=sys.stderr)
-        return 2
+        return EXIT_USAGE
+    # A traceback is the worst output for a small model: it says nothing about what to do next.
     try:
         return args.func(args)
-    except (wikiapi.LangError, wikiapi.ApiError) as e:
+    except wikiapi.ApiError as e:
         print(f"ERROR: {e}", file=sys.stderr)
-        return 2
+        return EXIT_NETWORK
+    except (UsageError, wikiapi.LangError, ValueError, OSError) as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        return EXIT_USAGE
 
 
 if __name__ == "__main__":

@@ -99,6 +99,24 @@ class Growth(unittest.TestCase):
         self.assertAlmostEqual(m["yearly"][1]["growth_clean"], 0.0, places=2)
         self.assertAlmostEqual(m["growth"], m["yearly"][-1]["growth_clean"], places=2)
 
+    def test_warmup_makes_metrics_independent_of_window(self):
+        """Ten busy days at the start of the 24-month window must be cleaned the same either way."""
+        months36, months24 = M.month_list("2026-08", 36), M.month_list("2026-08", 24)
+        start = M.month_bounds(months36[0])[0] - timedelta(days=M.SPIKE_WARMUP)
+        end = M.month_bounds(months36[-1])[1]
+        busy = {M.month_bounds(months24[0])[0] + timedelta(days=i) for i in range(10)}
+        daily = {d.strftime("%Y%m%d"): (700 if d in busy else 200)
+                 for d in [start + timedelta(days=i) for i in range((end - start).days + 1)]}
+
+        short = M.analyze_series(daily, wiki(), months24, M.SPIKE_WARMUP)
+        long = M.analyze_series(daily, wiki(), months36, M.SPIKE_WARMUP)
+        for key in ("growth_clean", "adj_growth"):
+            self.assertAlmostEqual(short[key], long[key], places=6, msg=key)
+
+        # Without the warm-up those days keep a truncated median window and inflate the baseline.
+        self.assertNotAlmostEqual(M.analyze_series(daily, wiki(), months24)["growth_clean"],
+                                  long["growth_clean"], places=6)
+
     def test_no_views_before_is_low(self):
         _, level, codes = run(series(lambda d: 300 if d >= LAST_YEAR_START else 0))
         self.assertEqual(level, "LOW")

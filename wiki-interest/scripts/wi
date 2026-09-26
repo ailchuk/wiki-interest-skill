@@ -32,7 +32,10 @@ if [ ! -f "$VENV/.installed" ] || [ "$REQ" -nt "$VENV/.installed" ]; then
     echo "ERROR: could not create venv. On Debian/Ubuntu: sudo apt install python3-venv" >&2
     exit 1
   }
-  "$(venv_python)" -m pip install --quiet --disable-pip-version-check -r "$REQ" >&2
+  "$(venv_python)" -m pip install --quiet --disable-pip-version-check -r "$REQ" >&2 || {
+    echo "ERROR: could not install the dependencies in $REQ (see pip's output above). This usually means no internet access. Fix that and run the same command again: nothing is kept from a failed install." >&2
+    exit 4
+  }
   touch "$VENV/.installed"
 fi
 

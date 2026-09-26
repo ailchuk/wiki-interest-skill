@@ -7,6 +7,7 @@ import difflib
 import hashlib
 import json
 import os
+import sys
 import time
 import urllib.error
 import urllib.parse
@@ -50,7 +51,13 @@ def get_json(url, params=None, ttl=None):
     return body
 
 
+def _retrying(host, attempt, delay, why):
+    """Say why the wait happens, so a waiting agent does not read it as a hang."""
+    print(f"[wi] {host} {why}; retry {attempt + 1}/4 in {delay:.0f}s", file=sys.stderr)
+
+
 def _fetch(url):
+    host = urllib.parse.urlparse(url).netloc
     delay = 1.0
     for attempt in range(5):
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
@@ -61,12 +68,14 @@ def _fetch(url):
             if e.code == 404:
                 return None
             if e.code in (429, 500, 502, 503, 504) and attempt < 4:
+                _retrying(host, attempt, delay, f"answered HTTP {e.code}")
                 time.sleep(delay)
                 delay *= 2
                 continue
             raise ApiError(f"HTTP {e.code} from {url}") from e
         except (urllib.error.URLError, TimeoutError) as e:
             if attempt < 4:
+                _retrying(host, attempt, delay, "did not answer")
                 time.sleep(delay)
                 delay *= 2
                 continue

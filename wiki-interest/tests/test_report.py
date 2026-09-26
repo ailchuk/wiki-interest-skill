@@ -58,6 +58,27 @@ class Findings(unittest.TestCase):
         bad = render.check_numbers(render.parse_findings(FINDINGS.replace("12/12", "7/12")), make_run())
         self.assertIn("'7/12' is not in the data", bad)
 
+    def test_flipped_sign_is_caught(self):
+        bad = render.check_numbers(render.parse_findings(FINDINGS.replace("+50%", "-50%")), make_run())
+        self.assertEqual(len(bad), 1)
+        self.assertIn("points the wrong way", bad[0])
+        self.assertIn("+50%", bad[0])
+
+    def test_unsigned_percent_matches_on_magnitude(self):
+        # The direction lives in the words ("fell by 50%"), so an unsigned number is not a sign error.
+        text = FINDINGS.replace("uk grows +50%", "uk fell by 50%")
+        self.assertEqual(render.check_numbers(render.parse_findings(text), make_run()), [])
+
+    def test_invented_count_is_caught(self):
+        text = FINDINGS.replace("Focus on uk.", "Focus on uk: 1500 views per day is a big audience.")
+        bad = render.check_numbers(render.parse_findings(text), make_run())
+        self.assertEqual(bad, ["'1500' is not a number the tool printed"])
+
+    def test_real_counts_and_dates_pass(self):
+        text = FINDINGS.replace("Focus on uk.",
+                                "uk has 150 views/day over 2024-09..2026-08, all 24 months, even in 2025.")
+        self.assertEqual(render.check_numbers(render.parse_findings(text), make_run()), [])
+
     def test_question_is_not_checked(self):
         text = FINDINGS.replace("Is interest growing?", "Did it grow 99%?")
         self.assertEqual(render.check_numbers(render.parse_findings(text), make_run()), [])

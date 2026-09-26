@@ -40,6 +40,15 @@ Run every command as `bash <skill-dir>/scripts/wi <command>`, where `<skill-dir>
 - Follow-ups (other period, languages, sorting): rerun the printed `Rerun` command with the changed parameter. Data is cached, so this is instant. Run `find` again only for a new topic.
 - Broad intents ("learning English"): analyze 2-3 related articles (e.g. English language Q1860 and IELTS) and say they are proxies.
 
+## If a command fails
+
+Output starting with `ERROR:` says what to fix: fix exactly that and run the same command again. Never route around a failure by inventing an article title, a number or a trend, and never silently drop a language the user asked about. Exit code 2 = wrong input, 3 = findings do not match the data, 4 = network or install.
+
+- `No Wikidata item found` - rerun `find` with the topic's English name, then with a more specific term. Still nothing: tell the user the topic could not be located on Wikidata.
+- `not a Wikipedia language code` - use the code the message suggests.
+- `Network error` / exit 4 - retry the command once. If it fails again, tell the user the Wikimedia API is unreachable and stop. Lines starting with `[wi]` are retries in progress, not failures.
+- `NUMBERS DO NOT MATCH THE DATA` - correct `findings.md` from the values printed below the message, then run `report` again.
+
 ## Report (PDF, one page)
 
 Write `findings.md` in the user's language:
