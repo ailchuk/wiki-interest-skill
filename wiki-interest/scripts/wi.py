@@ -9,6 +9,7 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
+import answer
 import metrics
 import render
 import wikiapi
@@ -187,12 +188,39 @@ def cmd_analyze(args):
     return 0
 
 
-def cmd_report(args):
-    run_dir = Path(args.run_dir)
-    mfile = run_dir / "metrics.json"
+def load_run(run_dir):
+    mfile = Path(run_dir) / "metrics.json"
     if not mfile.exists():
         raise UsageError(f"{mfile} not found. Pass the run folder printed by `analyze`.")
-    run = json.loads(mfile.read_text("utf-8"))
+    return json.loads(mfile.read_text("utf-8"))
+
+
+def cmd_check(args):
+    run = load_run(args.run_dir)
+    path = Path(args.answer)
+    if not path.exists():
+        raise UsageError(f"{path} not found. Save the draft answer to that file, then check it.")
+    text = path.read_text("utf-8")
+    problems, reminders = answer.review(text, run)
+    if problems:
+        print("ANSWER DOES NOT MATCH THE DATA - fix these before replying:")
+        print("\n".join(f"- {p}" for p in problems))
+        print("Values in the data:")
+        print("\n".join(f"- {v}" for v in render.allowed_values(run)))
+    else:
+        print("Numbers and signs: every one of them is in the data.")
+    print("Not checkable by code, check yourself:")
+    print("\n".join(f"- {r}" for r in reminders))
+    if problems and not args.force:
+        print("Rewrite the answer and run check again. Use --force only for numbers that are not metrics "
+              "(e.g. the user's own targets).")
+        return EXIT_FINDINGS
+    return 0
+
+
+def cmd_report(args):
+    run_dir = Path(args.run_dir)
+    run = load_run(run_dir)
     ftext = Path(args.findings).read_text("utf-8")
     doc = render.parse_findings(ftext)
     if not doc["sections"]:
@@ -333,6 +361,7 @@ def _summary(run, out):
     lines += [
         "",
         f"Files: {out}/ (metrics.json, monthly.csv, trend.png, growth.png)",
+        f"Before you send the answer, save the draft to answer.md and run: {WI} check {out} --answer answer.md",
         f"Rerun or change one parameter: {run['command']}",
         f"Report: write findings.md (template in SKILL.md), then: {WI} report {out} --findings findings.md "
         f"--lang <user's language: {' '.join(LANGS)}; others: en>",
@@ -368,6 +397,12 @@ def build_parser():
                    help=f"Views/day needed before a trend can be HIGH (default {metrics.HIGH_VOLUME}).")
     a.add_argument("--out", default="wiki-research", help="Output folder (default ./wiki-research).")
     a.set_defaults(func=cmd_analyze)
+
+    c = sub.add_parser("check", help="Check a draft chat answer against the data before sending it.")
+    c.add_argument("run_dir", help="Run folder printed by analyze (contains metrics.json).")
+    c.add_argument("--answer", required=True, metavar="FILE", help="File holding the draft answer, in any language.")
+    c.add_argument("--force", action="store_true", help="Print the problems but exit 0.")
+    c.set_defaults(func=cmd_check)
 
     r = sub.add_parser("report", help="One-page PDF from an analyze run and the agent's findings.md.")
     r.add_argument("run_dir", help="Run folder printed by analyze (contains metrics.json).")

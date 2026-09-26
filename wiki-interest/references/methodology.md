@@ -45,8 +45,12 @@ What counts as a usable audience depends on the niche, so the two volume thresho
 
 Default: by adjusted growth; LOW-confidence languages go last. Confidence only demotes unreliable rows: a confident decline never outranks a stable or growing language. `--sort growth` ignores confidence; `--sort volume` ranks by views/day.
 
-## Report checks
+## Answer and report checks
 
+Both the chat answer (`check`) and the PDF (`report`) are verified against the run with the same code, because the answer the user reads first deserves the same gate as the document.
+
+- `check` reads a draft answer in any language and splits its output in two. **Problems** are what code can judge on its own: numbers that are not in the data (same rules as below) and flag emoji, which turn a language edition into a country. Problems set exit code 3, so the agent must rewrite before replying; `--force` reports them and exits 0.
+- **Check yourself** is the rest: languages that returned no data, confidence levels the answer never names, the two mandatory limitations, the 2025 bot note when the period covers it, and the ban on causes. These are hints, not verdicts - the answer is written in the user's own words, so their absence is detected by matching stems from all 14 locales plus English, and a synonym can slip through. They are never a reason to block.
 - `report` compares every number in `findings.md` (except the `Question:` line) with the run's metrics. Mismatch = no PDF; `--force` skips the check.
   - Percentages: tolerance +-1 point. A percentage written with an explicit `+` or `-` must also match the direction, so calling a decline `+34%` is rejected. Without a sign the direction lives in the surrounding words ("fell by 34%"), so only the magnitude is compared.
   - `N/12`: must be one of the months-up or months-down counts.
@@ -59,7 +63,7 @@ Default: by adjusted growth; LOW-confidence languages go last. Confidence only d
 
 ## Errors
 
-Every failure is reported as a single `ERROR:` line that names the fix; the agent never sees a traceback. Exit codes separate the kinds of fix: `0` success, `1` environment (no Python 3.10+, venv could not be created), `2` wrong input (unknown language code or QID, bad `--article` or `--end`, missing file, topic not found), `3` findings do not match the data or do not fit one page, `4` network or dependency install.
+Every failure is reported as a single `ERROR:` line that names the fix; the agent never sees a traceback. Exit codes separate the kinds of fix: `0` success, `1` environment (no Python 3.10+, venv could not be created), `2` wrong input (unknown language code or QID, bad `--article` or `--end`, missing file, topic not found), `3` the answer or the findings do not match the data, or the findings do not fit one page, `4` network or dependency install.
 
 Partial failures never stop a run: a language without an article becomes `MISSING`, a wrong title becomes `NO VIEWS`, a font that will not download leaves a warning and blank glyphs rather than no PDF, and findings that are too long shrink to 76% before being rejected. Requests are retried five times with exponential backoff on 429 and 5xx; each wait prints a `[wi]` line so the pause is not mistaken for a hang. HTTP 404 means "no data", not an error.
 

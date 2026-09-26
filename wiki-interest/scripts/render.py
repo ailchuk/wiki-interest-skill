@@ -200,14 +200,19 @@ def _counts(run):
 
 
 def check_numbers(doc, run):
-    """Every number in findings must come from the data. Returns mismatch messages.
+    """Check the findings sections of a parsed document; the `Question:` line is not checked."""
+    return check_text("\n".join(line for s in doc["sections"] for line in s["lines"]), run)
+
+
+def check_text(text, run):
+    """Every number in the text must come from the data. Returns mismatch messages.
 
     Percentages written with an explicit sign must also match its direction; without a sign the
     direction lives in the words around it ("fell by 34%"), so only the magnitude is compared.
     """
     pcts, counts = _percents(run), _counts(run)
     months = {r["metrics"][k] for r in run["rows"] if r["status"] == "ok" for k in ("months_up", "months_down")}
-    text = "\n".join(line for s in doc["sections"] for line in s["lines"]).translate(NORMALIZE)
+    text = text.translate(NORMALIZE)
     bad = []
     for m in PCT_RE.finditer(text):
         raw = m.group(1).replace(" ", "")

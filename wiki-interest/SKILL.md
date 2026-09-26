@@ -17,7 +17,9 @@ Run every command as `bash <skill-dir>/scripts/wi <command>`, where `<skill-dir>
    - Pick the candidate that matches the user's meaning. If two fit and the answer would differ, ask the user.
    - `MISSING` = no article in that language: interest there cannot be measured, say so. Never invent a title. Never replace it with a broader or different topic (e.g. "fasting" for "intermittent fasting") and never compare such a substitute with other languages. Use `--article pl:"Title"` only for the same concept, and call it a proxy.
 2. **Analyze.** Run the `Next:` command printed by `find`. Options: `--months 36` (min 24), `--sort growth|volume`, `--article lang:"Title"`, and `--low-views N` / `--high-views N` when the user says what audience size counts for them (default 20 / 100). Raising `--low-views` also pushes smaller editions to the bottom of the ranking.
-3. **Answer** from the `analyze` output only (see rules).
+3. **Check, then answer.** Write the draft answer (from the `analyze` output only, see rules) to `answer.md`, then
+   `bash <skill-dir>/scripts/wi check <run-dir> --answer answer.md`
+   Rewrite whatever it lists as a problem and check again; work through the `check yourself` list too. Send the answer only after that.
 4. **Report** only when the user asks for a report, PDF or something to share (see below).
 
 ## How to read `analyze` output
@@ -42,12 +44,12 @@ Run every command as `bash <skill-dir>/scripts/wi <command>`, where `<skill-dir>
 
 ## If a command fails
 
-Output starting with `ERROR:` says what to fix: fix exactly that and run the same command again. Never route around a failure by inventing an article title, a number or a trend, and never silently drop a language the user asked about. Exit code 2 = wrong input, 3 = findings do not match the data, 4 = network or install.
+Output starting with `ERROR:` says what to fix: fix exactly that and run the same command again. Never route around a failure by inventing an article title, a number or a trend, and never silently drop a language the user asked about. Exit code 2 = wrong input, 3 = the answer or findings do not match the data, 4 = network or install.
 
 - `No Wikidata item found` - rerun `find` with the topic's English name, then with a more specific term. Still nothing: tell the user the topic could not be located on Wikidata.
 - `not a Wikipedia language code` - use the code the message suggests.
 - `Network error` / exit 4 - retry the command once. If it fails again, tell the user the Wikimedia API is unreachable and stop. Lines starting with `[wi]` are retries in progress, not failures.
-- `NUMBERS DO NOT MATCH THE DATA` - correct `findings.md` from the values printed below the message, then run `report` again.
+- `ANSWER DOES NOT MATCH THE DATA` / `NUMBERS DO NOT MATCH THE DATA` - correct the answer or `findings.md` from the values printed below the message, then run `check` or `report` again.
 
 ## Report (PDF, one page)
 
