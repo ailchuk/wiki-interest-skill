@@ -73,6 +73,15 @@ class Growth(unittest.TestCase):
         self.assertEqual(level, "LOW")
         self.assertIn("low_volume", codes)
 
+    def test_user_thresholds_override_the_defaults(self):
+        """A niche audience of 15/day: LOW by default, trusted once the user lowers the bar."""
+        m = M.analyze_series(series(lambda d: 15 if d >= LAST_YEAR_START else 10), wiki(), MONTHS)
+        self.assertEqual(M.confidence(m)[0], "LOW")
+        self.assertEqual(M.confidence(m, low_views=10, high_views=12)[0], "HIGH")
+        level, reasons = M.confidence(m, low_views=40, high_views=100)
+        self.assertEqual(level, "LOW")
+        self.assertEqual(dict(reasons)["low_volume"]["min"], 40)
+
     def test_article_created_mid_period_is_low(self):
         m, level, codes = run(series(lambda d: 300 if d >= date(2025, 3, 1) else 0))
         self.assertEqual(m["leading_zero_months"], 6)

@@ -32,6 +32,7 @@
  "a_filters": "Vues humaines uniquement (robots et crawlers exclus), toutes plateformes (ordinateur, web mobile, application).",
  "a_spikes": "Pic = jour avec plus de 3 fois ses vues habituelles (médiane sur +-14 jours) ; « hors pics » remplace ces jours par le niveau habituel.",
  "a_adjusted": "« Ajustée » = évolution de la part de l'article dans toutes les vues de cette Wikipédia, pour qu'une baisse générale du trafic ne soit pas lue comme une perte d'intérêt.",
+ "a_thresholds": "Seuils de confiance choisis par l'utilisateur au lieu des valeurs par défaut ({dlow}/{dhigh}) : moins de {low} vues/jour = FAIBLE, il faut {high}+ pour ÉLEVÉE.",
  "l_interest": "Les vues mesurent la curiosité, pas la disposition à payer.",
  "l_country": "Une édition linguistique n'est pas un pays : les lecteurs d'une langue vivent dans de nombreux pays, et beaucoup lisent Wikipédia dans d'autres langues.",
  "l_proxy": "Un article n'est qu'une approximation du sujet ; les articles liés et les autres sources (recherche, assistants IA, vidéo) ne sont pas couverts.",

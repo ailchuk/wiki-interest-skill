@@ -32,6 +32,7 @@
  "a_filters": "Yalnızca insan görüntülemeleri (botlar ve tarayıcılar hariç), tüm platformlar (masaüstü, mobil web, uygulama).",
  "a_spikes": "Sıçrama = olağan görüntülenmesinin 3 katından fazlasını alan gün (+-14 günün medyanı); «sıçramasız» bu günleri olağan düzeyle değiştirir.",
  "a_adjusted": "«Düzeltilmiş» = maddenin o Vikipedi'nin tüm görüntülemeleri içindeki payının değişimi; böylece genel trafik düşüşü ilgi kaybı olarak okunmaz.",
+ "a_thresholds": "Güven eşikleri varsayılanlar ({dlow}/{dhigh}) yerine kullanıcı tarafından belirlendi: günde {low} görüntülemenin altı = DÜŞÜK, YÜKSEK için {high}+ gerekir.",
  "l_interest": "Görüntülenmeler merakı ölçer, ödeme isteğini değil.",
  "l_country": "Bir dil sürümü bir ülke değildir: bir dilin okurları birçok ülkede yaşar ve birçok kişi Vikipedi'yi başka dillerde okur.",
  "l_proxy": "Tek bir madde konunun yalnızca bir yaklaşığıdır; ilgili maddeler ve diğer kaynaklar (arama, yapay zekâ asistanları, video) kapsanmaz.",

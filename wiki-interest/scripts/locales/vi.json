@@ -32,6 +32,7 @@
  "a_filters": "Chỉ lượt xem của người (loại trừ bot và trình thu thập), mọi nền tảng (máy tính, web di động, ứng dụng).",
  "a_spikes": "Đột biến = ngày có lượt xem gấp hơn 3 lần mức thường (trung vị của +-14 ngày); «bỏ đột biến» thay các ngày đó bằng mức thường.",
  "a_adjusted": "«Điều chỉnh» = thay đổi tỷ trọng của bài trong tổng lượt xem của Wikipedia đó, để sự sụt giảm lưu lượng chung không bị hiểu là mất quan tâm.",
+ "a_thresholds": "Ngưỡng độ tin cậy do người dùng đặt thay cho mặc định ({dlow}/{dhigh}): dưới {low} lượt xem/ngày = THẤP, cần {high}+ để đạt CAO.",
  "l_interest": "Lượt xem đo sự tò mò, không phải mức sẵn sàng chi trả.",
  "l_country": "Một phiên bản ngôn ngữ không phải là một quốc gia: người đọc một ngôn ngữ sống ở nhiều nước, và nhiều người đọc Wikipedia bằng ngôn ngữ khác.",
  "l_proxy": "Một bài viết chỉ là đại diện gần đúng cho chủ đề; các bài liên quan và nguồn khác (tìm kiếm, trợ lý AI, video) không được tính.",

@@ -20,6 +20,7 @@ MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 # Exit codes tell the agent what kind of fix is needed (1 = environment, from scripts/wi).
 EXIT_USAGE, EXIT_FINDINGS, EXIT_NETWORK = 2, 3, 4
+DEFAULT_THRESHOLDS = {"low_views": metrics.LOW_VOLUME, "high_views": metrics.HIGH_VOLUME}
 
 
 class UsageError(Exception):
@@ -95,6 +96,9 @@ def _pick(values, lang):
 def cmd_analyze(args):
     if args.months < 24:
         raise UsageError("--months must be >= 24 (growth compares the last 12 months with the previous 12).")
+    if not 0 < args.low_views < args.high_views:
+        raise UsageError(f"--low-views must be above 0 and below --high-views, "
+                         f"got {args.low_views:g} and {args.high_views:g}.")
     overrides = {}
     for item in args.article or []:
         code, sep, title = item.partition(":")
@@ -148,7 +152,7 @@ def cmd_analyze(args):
         m = metrics.analyze_series(daily, wiki_monthly, months, warmup)
         m["wiki_monthly"] = wiki_monthly
         row["metrics"] = m
-        row["confidence"], row["reasons"] = metrics.confidence(m)
+        row["confidence"], row["reasons"] = metrics.confidence(m, args.low_views, args.high_views)
         row["trend"] = metrics.trend(m)
     rows = metrics.rank(rows, args.sort)
 
@@ -157,15 +161,21 @@ def cmd_analyze(args):
     cmd += [f"--article={shlex.quote(f'{c}:{t}')}" for c, t in overrides.items()]
     if args.sort != "confidence":
         cmd += ["--sort", args.sort]
+    thresholds = {"low_views": args.low_views, "high_views": args.high_views}
+    custom = {k: v for k, v in thresholds.items() if v != DEFAULT_THRESHOLDS[k]}
+    for key, value in custom.items():
+        cmd += [f"--{key.replace('_', '-')}", f"{value:g}"]
     run = {
         "created": date.today().isoformat(), "qid": qid, "label": label,
         "langs": [w["code"] for w in wikis], "months": months, "sort": args.sort,
-        "command": " ".join(cmd), "rows": rows,
+        "thresholds": thresholds, "command": " ".join(cmd), "rows": rows,
     }
 
+    # Runs that differ only by article overrides or thresholds must not overwrite each other.
+    variant = dict(overrides, **{f"threshold_{k}": v for k, v in custom.items()})
     slug = f"{qid or 'articles'}_{'-'.join(run['langs'])}_{months[0]}_{months[-1]}"
-    if overrides:
-        slug += "_" + hashlib.sha1(json.dumps(overrides, sort_keys=True).encode()).hexdigest()[:6]
+    if variant:
+        slug += "_" + hashlib.sha1(json.dumps(variant, sort_keys=True).encode()).hexdigest()[:6]
     out = Path(args.out) / slug
     out.mkdir(parents=True, exist_ok=True)
     (out / "metrics.json").write_text(json.dumps(run, ensure_ascii=False, indent=1), "utf-8")
@@ -270,6 +280,11 @@ def _summary(run, out):
         "",
         "## Why this confidence",
     ]
+    th = run.get("thresholds", DEFAULT_THRESHOLDS)
+    if th != DEFAULT_THRESHOLDS:
+        lines.append(f"Thresholds set by the user, not the defaults ({DEFAULT_THRESHOLDS['low_views']:g}/"
+                     f"{DEFAULT_THRESHOLDS['high_views']:g}): under {th['low_views']:g} views/day = LOW, "
+                     f"{th['high_views']:g}+ needed for HIGH. Say so when you report confidence.")
     for r in run["rows"]:
         if r["status"] == "missing":
             lines.append(f"- {r['code']}: no article in {r['english']} Wikipedia. Interest there cannot be measured; "
@@ -346,6 +361,11 @@ def build_parser():
     a.add_argument("--end", help="Last month YYYY-MM (default: last complete month).")
     a.add_argument("--sort", default="confidence", choices=metrics.SORTS,
                    help="Ranking: confidence (default), growth (adjusted), volume (views/day).")
+    a.add_argument("--low-views", type=float, default=metrics.LOW_VOLUME, metavar="N",
+                   help=f"Views/day below which a trend is LOW, i.e. the smallest audience worth trusting "
+                        f"(default {metrics.LOW_VOLUME}). Raise it to rank small editions last.")
+    a.add_argument("--high-views", type=float, default=metrics.HIGH_VOLUME, metavar="N",
+                   help=f"Views/day needed before a trend can be HIGH (default {metrics.HIGH_VOLUME}).")
     a.add_argument("--out", default="wiki-research", help="Output folder (default ./wiki-research).")
     a.set_defaults(func=cmd_analyze)
 

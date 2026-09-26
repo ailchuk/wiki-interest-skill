@@ -16,7 +16,7 @@ Run every command as `bash <skill-dir>/scripts/wi <command>`, where `<skill-dir>
    - `--query-lang`: language the topic is written in.
    - Pick the candidate that matches the user's meaning. If two fit and the answer would differ, ask the user.
    - `MISSING` = no article in that language: interest there cannot be measured, say so. Never invent a title. Never replace it with a broader or different topic (e.g. "fasting" for "intermittent fasting") and never compare such a substitute with other languages. Use `--article pl:"Title"` only for the same concept, and call it a proxy.
-2. **Analyze.** Run the `Next:` command printed by `find`. Options: `--months 36` (min 24), `--sort growth|volume`, `--article lang:"Title"`.
+2. **Analyze.** Run the `Next:` command printed by `find`. Options: `--months 36` (min 24), `--sort growth|volume`, `--article lang:"Title"`, and `--low-views N` / `--high-views N` when the user says what audience size counts for them (default 20 / 100). Raising `--low-views` also pushes smaller editions to the bottom of the ranking.
 3. **Answer** from the `analyze` output only (see rules).
 4. **Report** only when the user asks for a report, PDF or something to share (see below).
 

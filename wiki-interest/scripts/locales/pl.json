@@ -32,6 +32,7 @@
  "a_filters": "Tylko wyświetlenia ludzi (boty i crawlery wykluczone), wszystkie platformy (komputer, strona mobilna, aplikacja).",
  "a_spikes": "Skok = dzień z ponad 3-krotnością zwykłej liczby wyświetleń (mediana z +-14 dni); „bez skoków” zastępuje takie dni zwykłym poziomem.",
  "a_adjusted": "„Skorygowany” = zmiana udziału artykułu we wszystkich wyświetleniach danej Wikipedii, aby ogólny spadek ruchu nie był odczytywany jako utrata zainteresowania.",
+ "a_thresholds": "Progi pewności ustawione przez użytkownika zamiast domyślnych ({dlow}/{dhigh}): poniżej {low} wyświetleń dziennie = NISKA, do WYSOKIEJ potrzeba {high}+.",
  "l_interest": "Wyświetlenia mierzą ciekawość, a nie gotowość do zapłaty.",
  "l_country": "Wersja językowa to nie kraj: czytelnicy jednego języka mieszkają w wielu krajach, a wiele osób czyta Wikipedię w innych językach.",
  "l_proxy": "Jeden artykuł to tylko przybliżenie tematu; powiązane artykuły i inne źródła (wyszukiwarki, asystenci AI, wideo) nie są uwzględnione.",

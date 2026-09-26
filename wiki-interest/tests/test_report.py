@@ -98,6 +98,18 @@ class Findings(unittest.TestCase):
         self.assertEqual(render.unsupported_chars("天文学"), ["天", "学", "文"])
 
 
+class Assumptions(unittest.TestCase):
+    def test_default_thresholds_are_not_mentioned(self):
+        text = " ".join(render._assumptions(make_run(), "en"))
+        self.assertNotIn("Confidence thresholds", text)
+
+    def test_changed_thresholds_are_stated(self):
+        run = dict(make_run(), thresholds={"low_views": 5.0, "high_views": 50.0})
+        text = " ".join(render._assumptions(run, "en"))
+        self.assertIn("under 5 views/day = LOW", text)
+        self.assertIn("50+ views/day needed for HIGH", text)
+
+
 class Pdf(unittest.TestCase):
     def test_one_page_in_both_languages(self):
         with tempfile.TemporaryDirectory() as tmp:

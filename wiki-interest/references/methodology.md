@@ -39,6 +39,8 @@ HIGH if all of:
 
 Otherwise MEDIUM. Every level is printed with its reasons.
 
+What counts as a usable audience depends on the niche, so the two volume thresholds are arguments: `--low-views` (default 20) and `--high-views` (default 100). Raising `--low-views` doubles as an audience floor, because the default ranking already sends LOW rows to the bottom. A changed threshold goes into the run folder name, the rerun command, the `analyze` summary and the PDF assumptions, so a report never misdescribes how its confidence was set.
+
 ## Ranking
 
 Default: by adjusted growth; LOW-confidence languages go last. Confidence only demotes unreliable rows: a confident decline never outranks a stable or growing language. `--sort growth` ignores confidence; `--sort volume` ranks by views/day.

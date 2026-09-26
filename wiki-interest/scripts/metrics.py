@@ -154,27 +154,31 @@ def analyze_series(daily, wiki_monthly, months, warmup=0):
     }
 
 
-def confidence(m):
-    """(level, reasons). Reasons are (code, params) pairs; texts live in i18n.py."""
+def confidence(m, low_views=LOW_VOLUME, high_views=HIGH_VOLUME):
+    """(level, reasons). Reasons are (code, params) pairs; texts live in i18n.py.
+
+    The volume thresholds are arguments because what counts as a usable audience depends on
+    the niche: the user can raise or lower them, and the report then states the values used.
+    """
     g, gc, adj = m["growth"], m["growth_clean"], m["adj_growth"]
     vpd = m["views_per_day"]
 
-    low = []
-    if vpd < LOW_VOLUME:
-        low.append(("low_volume", {"vpd": vpd, "min": LOW_VOLUME}))
+    reasons = []
+    if vpd < low_views:
+        reasons.append(("low_volume", {"vpd": vpd, "min": low_views}))
     if m["leading_zero_months"]:
-        low.append(("appeared", {"months": m["leading_zero_months"]}))
+        reasons.append(("appeared", {"months": m["leading_zero_months"]}))
     if g is None:
-        low.append(("no_baseline", {}))
+        reasons.append(("no_baseline", {}))
     elif abs(g) >= FLAT and (sign(g) != sign(gc) or abs(gc) < 0.5 * abs(g)):
-        low.append(("spike_driven", {"growth": g, "clean": gc}))
-    if low:
-        return "LOW", low
+        reasons.append(("spike_driven", {"growth": g, "clean": gc}))
+    if reasons:
+        return "LOW", reasons
 
     direction = sign(gc)
     steady = m["months_up"] if direction > 0 else m["months_down"]
     checks = [
-        (vpd >= HIGH_VOLUME, ("volume_ok", {"vpd": vpd}), ("moderate_volume", {"vpd": vpd, "min": HIGH_VOLUME})),
+        (vpd >= high_views, ("volume_ok", {"vpd": vpd}), ("moderate_volume", {"vpd": vpd, "min": high_views})),
         (direction == 0 or steady >= STABLE_MONTHS,
          ("steady", {"n": steady, "dir": direction}), ("unsteady", {"n": steady, "need": STABLE_MONTHS, "dir": direction})),
         (sign(gc) == sign(adj), ("agree", {}), ("disagree", {"clean": gc, "adj": adj, "wiki": m["wiki_growth"]})),

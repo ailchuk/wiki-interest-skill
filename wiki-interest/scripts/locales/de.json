@@ -32,6 +32,7 @@
  "a_filters": "Nur menschliche Aufrufe (Bots und Crawler ausgeschlossen), alle Plattformen (Desktop, mobiles Web, App).",
  "a_spikes": "Ausreißer = Tag mit mehr als dem 3-Fachen der üblichen Aufrufe (Median von +-14 Tagen); „ohne Ausreißer“ ersetzt solche Tage durch das übliche Niveau.",
  "a_adjusted": "„Bereinigt“ = Veränderung des Anteils des Artikels an allen Aufrufen dieser Wikipedia, damit ein allgemeiner Traffic-Rückgang nicht als Interessenverlust gelesen wird.",
+ "a_thresholds": "Vom Nutzer gesetzte Konfidenzschwellen statt der Standardwerte ({dlow}/{dhigh}): unter {low} Aufrufe/Tag = NIEDRIG, für HOCH sind {high}+ nötig.",
  "l_interest": "Aufrufe messen Neugier, nicht Zahlungsbereitschaft.",
  "l_country": "Eine Sprachversion ist kein Land: Leser einer Sprache leben in vielen Ländern, und viele Menschen lesen Wikipedia in anderen Sprachen.",
  "l_proxy": "Ein Artikel ist nur eine Annäherung an das Thema; verwandte Artikel und andere Quellen (Suche, KI-Assistenten, Video) sind nicht erfasst.",

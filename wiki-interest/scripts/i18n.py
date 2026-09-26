@@ -13,12 +13,12 @@ CHART_LANGS = ("en", "uk", "pl", "cs", "de", "es", "pt", "tr", "vi", "fr")  # De
 RTL_LANGS = ("ar",)
 
 REASONS = {
-    "low_volume": "low volume: {vpd:.1f} views/day (under {min} = LOW)",
+    "low_volume": "low volume: {vpd:.1f} views/day (under {min:g} = LOW)",
     "appeared": "no views in the first {months} month(s): article created or renamed during the period",
     "no_baseline": "no views in the previous 12 months: growth undefined",
     "spike_driven": "growth comes from spike days: {growth} raw vs {clean} without spikes",
     "volume_ok": "solid volume: {vpd:.0f} views/day",
-    "moderate_volume": "moderate volume: {vpd:.0f} views/day (HIGH needs {min}+)",
+    "moderate_volume": "moderate volume: {vpd:.0f} views/day (HIGH needs {min:g}+)",
     "steady_up": "{n}/12 months above the same month a year earlier",
     "steady_down": "{n}/12 months below the same month a year earlier",
     "steady_flat": "without spikes the change is within +-5%",

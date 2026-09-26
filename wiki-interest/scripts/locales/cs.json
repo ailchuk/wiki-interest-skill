@@ -32,6 +32,7 @@
  "a_filters": "Pouze zobrazení lidmi (boti a crawlery vyloučeny), všechny platformy (počítač, mobilní web, aplikace).",
  "a_spikes": "Výkyv = den s více než trojnásobkem obvyklých zobrazení (medián +-14 dní); „bez výkyvů“ nahrazuje takové dny obvyklou úrovní.",
  "a_adjusted": "„Očištěný“ = změna podílu článku na všech zobrazeních dané Wikipedie, aby celkový pokles provozu nebyl vykládán jako ztráta zájmu.",
+ "a_thresholds": "Prahy spolehlivosti zadal uživatel místo výchozích ({dlow}/{dhigh}): pod {low} zobrazení denně = NÍZKÁ, pro VYSOKOU je potřeba {high}+.",
  "l_interest": "Zobrazení měří zvědavost, ne ochotu platit.",
  "l_country": "Jazyková verze není země: čtenáři jednoho jazyka žijí v mnoha zemích a mnoho lidí čte Wikipedii v jiných jazycích.",
  "l_proxy": "Jeden článek je jen přiblížením tématu; související články a jiné zdroje (vyhledávání, AI asistenti, video) nejsou zahrnuty.",

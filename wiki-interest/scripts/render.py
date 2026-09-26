@@ -12,6 +12,7 @@ from fpdf.fonts import FontFace  # noqa: E402
 from matplotlib.ticker import FuncFormatter  # noqa: E402
 
 import fonts  # noqa: E402
+import metrics  # noqa: E402
 from i18n import RTL_LANGS, chart_lang, pct, t  # noqa: E402
 
 FONT_DIR = Path(matplotlib.get_data_path()) / "fonts" / "ttf"
@@ -258,13 +259,22 @@ GREY = (82, 81, 78)
 PAGE_W = 186  # A4 minus 12 mm margins
 
 
+DEFAULT_THRESHOLDS = {"low_views": metrics.LOW_VOLUME, "high_views": metrics.HIGH_VOLUME}
+
+
 def _assumptions(run, lang):
     rows = run["rows"]
     arts = "; ".join(f"{r['code']}: {r['title']}" + (" (proxy)" if r["proxy"] else "") for r in rows if r["title"])
     first = (t(lang, "a_topic", qid=run["qid"], articles=arts) if run["qid"]
              else t(lang, "a_articles", articles=arts))
-    return [first, t(lang, "a_period", start=run["months"][0], end=run["months"][-1]),
-            t(lang, "a_filters"), t(lang, "a_spikes"), t(lang, "a_adjusted")]
+    out = [first, t(lang, "a_period", start=run["months"][0], end=run["months"][-1]),
+           t(lang, "a_filters"), t(lang, "a_spikes"), t(lang, "a_adjusted")]
+    # A changed threshold must be stated, or the report would misdescribe how confidence was set.
+    th = run.get("thresholds", DEFAULT_THRESHOLDS)
+    if th != DEFAULT_THRESHOLDS:
+        out.append(t(lang, "a_thresholds", low=f"{th['low_views']:g}", high=f"{th['high_views']:g}",
+                     dlow=f"{DEFAULT_THRESHOLDS['low_views']:g}", dhigh=f"{DEFAULT_THRESHOLDS['high_views']:g}"))
+    return out
 
 
 def _limitations(run, lang):
