@@ -23,6 +23,9 @@ MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 EXIT_USAGE, EXIT_FINDINGS, EXIT_NETWORK = 2, 3, 4
 DEFAULT_THRESHOLDS = {"low_views": metrics.LOW_VOLUME, "high_views": metrics.HIGH_VOLUME}
 MAX_BASKET = 5  # articles per language in one run; more makes the table and the PDF unreadable
+# Largest editions by readership, in order. Used only to name where a missing topic can still be
+# read; the pageview API gives no size ranking, so this list is a rough guide, not data.
+BIG_WIKIS = ("en", "de", "fr", "es", "ru", "ja", "zh", "pt", "it", "pl", "nl", "ar", "tr", "id")
 
 
 class UsageError(Exception):
@@ -104,6 +107,18 @@ def cmd_find(args):
         print(f"MISSING languages ({','.join(missing)}) are reported as 'no article': interest there cannot be measured. "
               "Do not replace them with a broader topic (e.g. 'fasting' for 'intermittent fasting'). Only if a similar "
               f'article is the SAME concept: add --article {missing[0]}:"Exact Title" and call it a proxy.')
+        asked = {w["code"] for w in langs}
+        have = {db for q in basket for db in ents[q]["sitelinks"]} & wiki_dbnames
+        elsewhere = [c for c in BIG_WIKIS
+                     if c not in asked and (wikis.get(c) or {}).get("dbname") in have][:5]
+        print(f"The gap is an answer in itself, so say it: the topic has articles in {len(have)} Wikipedias"
+              + (f", among the largest {', '.join(elsewhere)}" if elsewhere else "")
+              + f". No article in {','.join(missing)} means the topic is niche there or not written up yet, not "
+              f"that nobody is interested: those readers may be using another language for it.")
+        if elsewhere:
+            print(f"If the user wants a signal anyway, analyze {elsewhere[0]} in a separate run and say plainly "
+                  f"that its readers are a global audience, not the {missing[0]} one. Never present those numbers "
+                  f"as interest in {missing[0]}.")
     if partial:
         print(f"{','.join(partial)} have only part of the basket, so fewer articles are counted there. `analyze` says "
               "which one is missing; report it before comparing that language with the others.")

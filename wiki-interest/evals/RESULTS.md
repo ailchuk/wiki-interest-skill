@@ -6,7 +6,7 @@ Prompts and checklist: [prompts.md](prompts.md). Each run starts in a fresh work
 
 | Case | Tool calls | Time | Cost | Result |
 |---|---|---|---|---|
-| ex1 pl vs cs, fasting | 6 | 45 s | $0.053 | Pass. Says the comparison is impossible (no pl article), reports cs with LOW confidence and its reason, limitations incl. the 2025 bot reclassification. |
+| ex1 pl vs cs, fasting | 5 | 42 s | $0.040 | Pass. Says the comparison is impossible (no pl article) and what that absence means - niche or not written up yet, Polish speakers may read it in another language - then reports cs with LOW confidence and its reason, plus limitations incl. the 2025 bot reclassification. |
 | ex2 astronomy, uk | 5 | 46 s | $0.039 | Pass. -47% adjusted, LOW because 18 views/day, answers the trust question directly. |
 | ex3 English, 6 editions + PDF | 9 | 92 s | $0.076 | Pass. Finds two concepts, analyzes them as one basket, names the editions that hold only part of it, PDF in one page ([example](examples/ex3-english-learning-report.pdf)). |
 | th "we launch above 200/day, below 50 is pointless" | 7 | 59 s | $0.052 | Partial. Reruns with `--low-views 50` and Polish drops to LOW as the user would want; `--high-views 200` still missed. |
@@ -31,6 +31,7 @@ Every run: the skill triggered on the first call, no invented article titles, ev
 | 8 | "The Vietnamese web is growing" given as the cause of a trend. | The answer template names the three inventions to avoid, in those words. Later runs move such guesses into "what to verify" instead. |
 | 8 | The user's own audience size ("from 200 a day") was ignored and the thresholds stayed at the defaults. | `analyze` prints the thresholds in use and the flags that change them. Next run used `--low-views 50`. |
 | 8 | `check` called the level missing when the answer wrote the inflected "НИЗЬКІЙ" for "НИЗЬКА", and rejected "20" although `analyze` prints it in every LOW reason. | Confidence words matched by stem; thresholds count as values the tool printed. |
+| 8 | A missing article ended the subject: "interest there cannot be measured", nothing more, although the absence is itself worth reporting. | `find` now says how many Wikipedias do have the topic and names the largest of them, that the gap means niche or not-yet-written rather than no interest, and that a large edition may be analyzed separately as a global signal but never as the missing language's audience. |
 
 ## Known limits of a small model
 
@@ -41,7 +42,7 @@ Every run: the skill triggered on the first call, no invented article titles, ev
 
 ## Totals
 
-36 Haiku runs in 8 rounds, $2.51 in total, including prompts in Ukrainian, Polish, Japanese and Arabic. In the final round a question takes 45-92 s and 5-9 tool calls; the cheaper rounds before `check` existed ran 22-61 s and 1-6 calls.
+37 Haiku runs in 8 rounds, $2.55 in total, including prompts in Ukrainian, Polish, Japanese and Arabic. In the final round a question takes 42-92 s and 5-9 tool calls; the cheaper rounds before `check` existed ran 22-61 s and 1-6 calls.
 
 ## Other scripts (round 7, PDF labels in 14 languages)
 
