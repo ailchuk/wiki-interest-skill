@@ -12,9 +12,8 @@ from datetime import date, timedelta
 from pathlib import Path
 
 if __name__ == "__main__":
-    _venv = Path(os.environ.get("WI_VENV") or Path(__file__).resolve().parent.parent / ".venv")
-    if Path(sys.prefix).resolve() != _venv.resolve():  # started outside the skill's venv, e.g. without bash
-        import bootstrap
+    import bootstrap  # stdlib only
+    if Path(sys.prefix).resolve() != bootstrap.venv_path().resolve():  # outside the skill's venv, e.g. no bash
         bootstrap.run()
 
 import answer

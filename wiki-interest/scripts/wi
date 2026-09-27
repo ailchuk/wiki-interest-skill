@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Entry point: bash <skill-dir>/scripts/wi <command> [args]
-# First run creates <skill-dir>/.venv and installs requirements.txt.
+# First run creates <skill-dir>/.venv (on Windows ~/.cache/wiki-interest/venv) and installs requirements.txt.
 set -euo pipefail
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VENV="${WI_VENV:-$SKILL_DIR/.venv}"
+# Windows: Claude Desktop keeps skills under a ~200-character path, and .venv\Lib\site-packages on top of it
+# passes the 260-character limit, so DLLs fail to load. A short per-user path avoids that.
+if [ "${OS:-}" = "Windows_NT" ] && [ -n "${HOME:-}" ]; then DEFAULT_VENV="$HOME/.cache/wiki-interest/venv"
+else DEFAULT_VENV="$SKILL_DIR/.venv"; fi
+VENV="${WI_VENV:-$DEFAULT_VENV}"
 REQ="$SKILL_DIR/requirements.txt"
 
 find_python() {
@@ -40,6 +44,7 @@ if [ ! -f "$VENV/.installed" ] || [ "$REQ" -nt "$VENV/.installed" ] ||
     exit 1
   fi
   echo "[wi] first run: creating $VENV and installing dependencies (1-2 min)..." >&2
+  mkdir -p "$(dirname "$VENV")"
   "$PY" -m venv --clear "$VENV" || {
     echo "ERROR: could not create venv. On Debian/Ubuntu: sudo apt install python3-venv" >&2
     exit 1

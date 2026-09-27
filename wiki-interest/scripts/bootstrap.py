@@ -32,17 +32,25 @@ def _ready(path):
             and marker.read_text().strip() == str(path) and _venv_python(path).exists())
 
 
+def venv_path():
+    """Same default as scripts/wi: <skill-dir>/.venv, or a short per-user path on Windows (260-character limit)."""
+    if os.environ.get("WI_VENV"):
+        return Path(os.environ["WI_VENV"])
+    return Path.home() / ".cache" / "wiki-interest" / "venv" if os.name == "nt" else SKILL_DIR / ".venv"
+
+
 def run():
     """Rerun wi.py inside the skill's venv, creating it first if needed. Never returns."""
     if sys.version_info < (3, 10):
         _fail("Python 3.10+ is needed, this is " + sys.version.split()[0] + ". Install it from python.org.", EXIT_ENV)
-    path = Path(os.environ.get("WI_VENV") or SKILL_DIR / ".venv")
+    path = venv_path()
     if not _ready(path):
         if path.is_dir() and any(path.iterdir()) and not (path / "pyvenv.cfg").exists():
             _fail(f"{path} exists and is not a Python venv; refusing to overwrite it. Set WI_VENV to a new folder.",
                   EXIT_ENV)
         print(f"[wi] first run: creating {path} and installing dependencies (1-2 min)...", file=sys.stderr)
         try:
+            path.parent.mkdir(parents=True, exist_ok=True)
             venv.EnvBuilder(clear=True, with_pip=True).create(path)
         except Exception as e:  # noqa: BLE001 - any failure here means the same fix
             _fail(f"could not create a venv ({e}). Reinstall Python from python.org with pip included.", EXIT_ENV)

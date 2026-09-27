@@ -24,7 +24,7 @@ bash wiki-interest/scripts/wi find "астрономія" --langs uk --query-lan
 bash wiki-interest/scripts/wi analyze Q333 --langs uk
 ```
 
-Перший запуск сам створює `wiki-interest/.venv` і ставить залежності (`matplotlib`, `fpdf2`, `uharfbuzz`, 1–2 хв). Результати пишуться в `./wiki-research/`.
+Перший запуск сам створює `wiki-interest/.venv` (на Windows `~/.cache/wiki-interest/venv`, бо Claude Desktop тримає навички за дуже довгим шляхом, а Windows обмежує шлях 260 символами) і ставить залежності (`matplotlib`, `fpdf2`, `uharfbuzz`, 1–2 хв). Результати пишуться в `./wiki-research/`.
 
 **Тести:**
 
