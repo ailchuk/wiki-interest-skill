@@ -37,7 +37,7 @@
  "a_partial": "Ở {langs} giỏ chưa đầy đủ: nơi đó đếm ít bài hơn, nên tổng thấp hơn chỉ vì lý do này.",
  "l_interest": "Lượt xem đo sự tò mò, không phải mức sẵn sàng chi trả.",
  "l_country": "Một phiên bản ngôn ngữ không phải là một quốc gia: người đọc một ngôn ngữ sống ở nhiều nước, và nhiều người đọc Wikipedia bằng ngôn ngữ khác.",
- "l_proxy": "Một bài viết chỉ là đại diện gần đúng cho chủ đề; các bài liên quan và nguồn khác (tìm kiếm, trợ lý AI, video) không được tính.",
+ "l_proxy": "Các bài viết được chọn chỉ là đại diện gần đúng cho chủ đề; các bài liên quan khác và nguồn khác (tìm kiếm, trợ lý AI, video) không được tính.",
  "l_low": "Lượng xem thấp ở {langs}: số liệu nhiễu, xu hướng chưa được xác nhận.",
  "l_missing": "Không có bài ở {langs}: không thể đo mức quan tâm ở đó theo cách này.",
  "l_spikes": "Các ngày đột biến (tin tức, sự kiện) ảnh hưởng đến {langs}: xem «bỏ đột biến».",

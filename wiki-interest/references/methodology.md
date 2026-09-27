@@ -72,6 +72,6 @@ Partial failures never stop a run: a language without an article becomes `MISSIN
 
 - Views show curiosity, not willingness to pay.
 - A language edition is not a country; many people read Wikipedia in another language.
-- One article is a proxy for a topic; search, AI assistants and video are not covered.
+- The chosen articles (one, or a basket) are a proxy for a topic; other related articles, search, AI assistants and video are not covered.
 - Total Wikipedia traffic is falling: in 2025 Wikimedia improved bot detection and reclassified March-August 2025 traffic, and reported about 8% fewer human pageviews than a year earlier ([source](https://diff.wikimedia.org/2025/10/17/new-user-trends-on-wikipedia/)). Prefer `adjusted` over raw growth.
 - Page views of redirects (old titles) are not added; a rename inside the period shows up as `LOW` (article appeared).

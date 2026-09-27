@@ -37,7 +37,7 @@
  "a_partial": "W {langs} koszyk jest niepełny: liczy się tam mniej artykułów, więc suma jest niższa już z tego powodu.",
  "l_interest": "Wyświetlenia mierzą ciekawość, a nie gotowość do zapłaty.",
  "l_country": "Wersja językowa to nie kraj: czytelnicy jednego języka mieszkają w wielu krajach, a wiele osób czyta Wikipedię w innych językach.",
- "l_proxy": "Jeden artykuł to tylko przybliżenie tematu; powiązane artykuły i inne źródła (wyszukiwarki, asystenci AI, wideo) nie są uwzględnione.",
+ "l_proxy": "Wybrane artykuły to tylko przybliżenie tematu; inne powiązane artykuły i inne źródła (wyszukiwarki, asystenci AI, wideo) nie są uwzględnione.",
  "l_low": "Mała liczba wyświetleń w {langs}: dane są zaszumione, trend należy uznać za niepotwierdzony.",
  "l_missing": "Brak artykułu w {langs}: zainteresowania nie da się tam zmierzyć tą metodą.",
  "l_spikes": "Na {langs} wpływają dni skoków (wiadomości, wydarzenia): zob. „bez skoków”.",

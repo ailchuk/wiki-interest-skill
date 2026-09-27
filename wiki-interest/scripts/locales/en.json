@@ -37,7 +37,7 @@
  "a_partial": "The basket is incomplete in {langs}: fewer articles are counted there, so the total is lower for that reason alone.",
  "l_interest": "Views measure curiosity, not willingness to pay.",
  "l_country": "A language edition is not a country: readers of one language live in many countries, and many people read other languages' Wikipedias.",
- "l_proxy": "One article is a proxy for the topic; related articles and other sources (search, AI assistants, video) are not covered.",
+ "l_proxy": "The chosen articles are a proxy for the topic; other related articles and other sources (search, AI assistants, video) are not covered.",
  "l_low": "Low volume in {langs}: numbers are noisy, treat the trend as unconfirmed.",
  "l_missing": "No article in {langs}: interest there cannot be measured this way.",
  "l_spikes": "Spike days (news, events) affect {langs}: see 'without spikes'.",

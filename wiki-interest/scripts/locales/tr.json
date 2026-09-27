@@ -37,7 +37,7 @@
  "a_partial": "{langs} dilinde sepet eksik: orada daha az makale sayılıyor, bu yüzden toplam sırf bu nedenle düşük.",
  "l_interest": "Görüntülenmeler merakı ölçer, ödeme isteğini değil.",
  "l_country": "Bir dil sürümü bir ülke değildir: bir dilin okurları birçok ülkede yaşar ve birçok kişi Vikipedi'yi başka dillerde okur.",
- "l_proxy": "Tek bir madde konunun yalnızca bir yaklaşığıdır; ilgili maddeler ve diğer kaynaklar (arama, yapay zekâ asistanları, video) kapsanmaz.",
+ "l_proxy": "Seçilen maddeler konunun yalnızca bir yaklaşığıdır; diğer ilgili maddeler ve diğer kaynaklar (arama, yapay zekâ asistanları, video) kapsanmaz.",
  "l_low": "{langs} içinde hacim düşük: sayılar gürültülü, eğilimi doğrulanmamış kabul edin.",
  "l_missing": "{langs} içinde madde yok: oradaki ilgi bu yolla ölçülemez.",
  "l_spikes": "Sıçrama günleri (haberler, olaylar) {langs} verisini etkiliyor: «sıçramasız» sütununa bakın.",

@@ -37,7 +37,7 @@
  "a_partial": "V {langs} je koš neúplný: počítá se tam méně článků, takže součet je nižší už jen proto.",
  "l_interest": "Zobrazení měří zvědavost, ne ochotu platit.",
  "l_country": "Jazyková verze není země: čtenáři jednoho jazyka žijí v mnoha zemích a mnoho lidí čte Wikipedii v jiných jazycích.",
- "l_proxy": "Jeden článek je jen přiblížením tématu; související články a jiné zdroje (vyhledávání, AI asistenti, video) nejsou zahrnuty.",
+ "l_proxy": "Vybrané články jsou jen přiblížením tématu; další související články a jiné zdroje (vyhledávání, AI asistenti, video) nejsou zahrnuty.",
  "l_low": "Nízký počet zobrazení v {langs}: data jsou zašuměná, trend považujte za nepotvrzený.",
  "l_missing": "Chybí článek v {langs}: zájem tam nelze touto metodou změřit.",
  "l_spikes": "{langs} ovlivňují dny výkyvů (zprávy, události): viz „bez výkyvů“.",

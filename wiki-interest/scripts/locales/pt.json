@@ -37,7 +37,7 @@
  "a_partial": "Em {langs} o cesto está incompleto: contam-se menos artigos ali, portanto o total é menor só por isso.",
  "l_interest": "Visualizações medem curiosidade, não disposição para pagar.",
  "l_country": "Uma edição linguística não é um país: leitores de um idioma vivem em muitos países, e muitas pessoas leem a Wikipédia em outros idiomas.",
- "l_proxy": "Um artigo é apenas uma aproximação do tema; artigos relacionados e outras fontes (busca, assistentes de IA, vídeo) não estão incluídos.",
+ "l_proxy": "Os artigos escolhidos são apenas uma aproximação do tema; outros artigos relacionados e outras fontes (busca, assistentes de IA, vídeo) não estão incluídos.",
  "l_low": "Volume baixo em {langs}: os números são ruidosos, trate a tendência como não confirmada.",
  "l_missing": "Sem artigo em {langs}: o interesse ali não pode ser medido desta forma.",
  "l_spikes": "Dias de pico (notícias, eventos) afetam {langs}: veja «sem picos».",

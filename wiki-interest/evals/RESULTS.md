@@ -39,6 +39,7 @@ Every run: the skill triggered on the first call, no invented article titles, ev
 
 - Causes and market claims are the one rule code cannot enforce: `check` can only remind. Runs now hedge them or move them into "what to verify", but a sentence like "the market is saturated" can still reach the user. A judge model would be the honest fix.
 - The basket has to be assembled by the model. When it names the concepts first it does this well, but the second concept it picks is its own choice ("second-language acquisition" rather than IELTS), and a poor choice is not detectable by code.
+- Confidence reasons can be paraphrased wrongly: the ex3 example PDF explains MEDIUM as "variance in the data", while `analyze` gives "trend differs after adjusting". `check` verifies the level word, not its reason.
 - Half-followed refinements: the user's lower bound became `--low-views`, the upper bound did not.
 - A passing `check` costs one extra tool call per question, about 10-15 s.
 
