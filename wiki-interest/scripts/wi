@@ -3,7 +3,8 @@
 # First run creates <skill-dir>/.venv (on Windows ~/.cache/wiki-interest/venv) and installs requirements.txt.
 set -euo pipefail
 
-SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Physical path (-P): a symlinked install must map to the same venv marker as the real folder.
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 # Windows: Claude Desktop keeps skills under a ~200-character path, and .venv\Lib\site-packages on top of it
 # passes the 260-character limit, so DLLs fail to load. A short per-user path avoids that.
 if [ "${OS:-}" = "Windows_NT" ] && [ -n "${HOME:-}" ]; then DEFAULT_VENV="$HOME/.cache/wiki-interest/venv"

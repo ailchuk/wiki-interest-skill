@@ -441,7 +441,8 @@ def _summary(run, out):
         "## Answer template (user's language)",
         "1. Direct answer in one sentence.",
         "2. One line per language edition, in rank order: '<Language>-language Wikipedia' (never a country name or flag), "
-        "adjusted growth, confidence + reason. Numbers only from the table above; no sums or new numbers.",
+        "adjusted growth, confidence + reason. Numbers only from the table above; no sums or new numbers. "
+        "views/day are page views, not people: write 'views', never 'users' or 'visitors'.",
         "3. What to research next and what to verify there. Name only things this data can point at: a language "
         "edition, a period, an article. Never a cause, a market or a competitor - 'the Vietnamese web is growing', "
         "'the market is saturated', 'other platforms are replacing Wikipedia' are inventions, not findings.",

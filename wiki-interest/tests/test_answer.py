@@ -83,6 +83,12 @@ class Reminders(unittest.TestCase):
                          for r in run["rows"] if r["status"] == "ok")
         self.assertNotIn("no word found", " | ".join(answer.review(text, run)[1]))
 
+    def test_views_called_people_are_named(self):
+        # A Haiku run on Windows wrote "101 користувач на день" for 101 views/day.
+        self.assertIn("'користувач'", self.reminders("Статтю відвідує 101 користувач на день."))
+        self.assertIn("'user'", self.reminders("About 100 users a day read it."))
+        self.assertNotIn("counts people", self.reminders(draft(make_run())))
+
     def test_causes_are_always_flagged(self):
         self.assertIn("no causes", self.reminders(draft(make_run())))
 

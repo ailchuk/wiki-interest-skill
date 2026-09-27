@@ -27,6 +27,13 @@ NOT_PAYING = re.compile(
     r"\bpay|\bплат|\bpłac|\bplatit|\bplac[eí]|\bzahl|\bpagar|\bpayer|\böde|\btrả tiền|\bchi trả"
     r"|支払|課金|付费|支付|الدفع|تدفع|भुगतान", re.IGNORECASE)
 
+# Pageviews count page loads, not people: "101 users a day" is a claim the data cannot make.
+PEOPLE_RE = re.compile(
+    r"\buser|\bvisitor|\bкористувач|\bвідвідувач|\bużytkownik|\bodwiedzając|\buživatel|\bnávštěvník"
+    r"|\bnutzer|\bbesucher|\busu[aá]rio|\bvisitante|\butilisateur|\bvisiteur|\bkullanıcı|\bziyaretçi"
+    r"|người dùng|khách truy cập|ユーザー|利用者|訪問者|用户|访客|مستخدم|زائر|زوار|उपयोगकर्ता|आगंतुक", re.IGNORECASE)
+
+
 def _stem(word):
     """Cut the last two letters off, so an inflected form still matches: НИЗЬКА also covers НИЗЬКІЙ."""
     return word[:max(3, len(word) - 2)]
@@ -65,5 +72,9 @@ def review(text, run):
         reminders.append("limitation missing: views show curiosity, not willingness to pay")
     if run["months"][0] <= BOT_MONTHS[1] and BOT_MONTHS[0] <= run["months"][-1]:
         reminders.append("the period covers the 2025 bot reclassification: say so if you report a decline")
+    people = dict.fromkeys(m.group(0) for m in PEOPLE_RE.finditer(text))
+    if people:
+        reminders.append(f"'{', '.join(people)}' counts people, but views/day are page views: one person can view "
+                         f"many times. Write views, not users or visitors")
     reminders.append("no causes, competition, market size or revenue: pageviews do not show them")
     return problems, reminders
