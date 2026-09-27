@@ -114,8 +114,9 @@ def cmd_find(args):
         print(f"The gap is an answer in itself, so say it: the topic has articles in {len(have)} Wikipedias"
               + (f", among the largest {', '.join(elsewhere)}" if elsewhere else "")
               + f". No article in {','.join(missing)} means the topic is niche there or not written up yet, not "
-              f"that nobody is interested: those readers may be using another language for it. Do not say which "
-              f"one - nothing here shows it; the list above is where articles exist, not what those readers read.")
+              f"that nobody is interested: those readers may be using another language for it. Which one is not in "
+              f"this data - the list above is where articles exist, not what those readers read. Name an edition "
+              f"only as something to check, never as a statement about who reads what.")
         print(f"Run the Next: command as printed: {','.join(missing)} stays in --langs and shows as MISSING. Do not "
               f"swap in or add another edition the user did not ask for.")
         if elsewhere:

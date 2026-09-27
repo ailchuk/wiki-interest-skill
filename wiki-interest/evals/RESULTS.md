@@ -32,7 +32,8 @@ Every run: the skill triggered on the first call, no invented article titles, ev
 | 8 | The user's own audience size ("from 200 a day") was ignored and the thresholds stayed at the defaults. | `analyze` prints the thresholds in use and the flags that change them. Next run used `--low-views 50`. |
 | 8 | `check` called the level missing when the answer wrote the inflected "НИЗЬКІЙ" for "НИЗЬКА", and rejected "20" although `analyze` prints it in every LOW reason. | Confidence words matched by stem; thresholds count as values the tool printed. |
 | 8 | A missing article ended the subject: "interest there cannot be measured", nothing more, although the absence is itself worth reporting. | `find` now says how many Wikipedias do have the topic and names the largest of them, that the gap means niche or not-yet-written rather than no interest, and that a large edition may be analyzed separately as a global signal but never as the missing language's audience. |
-| 8 | After that change: "Polish readers may read it in English or German" - German came from our list of large editions, not from data. Another run dropped pl from `analyze` and put en in its place, unasked, then called the en trend "global interest". | `find` says the list is where articles exist, not what readers read, and not to name a language; the missing language stays in `--langs`, another edition only on the user's request. Next 2 runs: pl kept, no language guessed. |
+| 8 | After that change: "Polish readers may read it in English or German" - German came from our list of large editions, not from data. Another run dropped pl from `analyze` and put en in its place, unasked, then called the en trend "global interest". | `find` says the list is where articles exist, not what readers read, and not to name a language; the missing language stays in `--langs`, another edition only on the user's request. Next 3 runs: pl kept, nothing put in its place. |
+| 8 | The blanket "do not name a language" was still broken: a run listed English and German as editions to check. Naming an edition that demonstrably has the article is not an invention, and a rule broken every run weakens the ones next to it. | The rule now separates the two cases: an edition may be named as something to check, never as a claim about who reads what. Next run kept the naming inside "what to research next", where a hypothesis belongs. |
 
 ## Known limits of a small model
 
@@ -43,7 +44,7 @@ Every run: the skill triggered on the first call, no invented article titles, ev
 
 ## Totals
 
-40 Haiku runs in 8 rounds, $2.78 in total, including prompts in Ukrainian, Polish, Japanese and Arabic. In the final round a question takes 42-92 s and 5-9 tool calls; the cheaper rounds before `check` existed ran 22-61 s and 1-6 calls.
+42 Haiku runs in 8 rounds, $2.87 in total, including prompts in Ukrainian, Polish, Japanese and Arabic. In the final round a question takes 42-92 s and 5-9 tool calls; the cheaper rounds before `check` existed ran 22-61 s and 1-6 calls.
 
 ## Other scripts (round 7, PDF labels in 14 languages)
 
