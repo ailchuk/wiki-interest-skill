@@ -53,7 +53,8 @@ Output starting with `ERROR:` says what to fix: fix exactly that and run the sam
 
 - `No Wikidata item found` - rerun `find` with the topic's English name, then with a more specific term. Still nothing: tell the user the topic could not be located on Wikidata.
 - `not a Wikipedia language code` - use the code the message suggests.
-- `Network error` / exit 4 - retry the command once. If it fails again, tell the user the Wikimedia API is unreachable and stop. Lines starting with `[wi]` are retries in progress, not failures.
+- `Network error` / exit 4 - retry the command once. If it fails again, tell the user the Wikimedia API is unreachable and stop.
+- The skill cannot run at all (exit 1, or exit 4 twice): tell the user what failed and how to fix it, and stop. Never answer the question from general knowledge instead - "astronomy has steady demand" with no data behind it is exactly what this skill exists to prevent. Lines starting with `[wi]` are retries in progress, not failures.
 - `ANSWER DOES NOT MATCH THE DATA` / `NUMBERS DO NOT MATCH THE DATA` - correct the answer or `findings.md` from the values printed below the message, then run `check` or `report` again.
 
 ## Report (PDF, one page)

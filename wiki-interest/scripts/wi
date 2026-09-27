@@ -22,21 +22,30 @@ venv_python() {
   if [ -x "$VENV/bin/python" ]; then echo "$VENV/bin/python"; else echo "$VENV/Scripts/python.exe"; fi
 }
 
-if [ ! -f "$VENV/.installed" ] || [ "$REQ" -nt "$VENV/.installed" ]; then
+# .installed records where the venv was built: a venv copied to another folder (cp -r of a working copy)
+# does not work there, so it is rebuilt from scratch.
+if [ ! -f "$VENV/.installed" ] || [ "$REQ" -nt "$VENV/.installed" ] ||
+   [ "$(cat "$VENV/.installed" 2>/dev/null)" != "$VENV" ]; then
   PY="$(find_python)" || {
     echo "ERROR: Python 3.10+ not found. Install it (python.org, brew install python, apt install python3) or set PYTHON=/path/to/python3." >&2
     exit 1
   }
+  # --clear and rm -rf below wipe $VENV, so never touch a non-empty folder that is not a venv (e.g. WI_VENV=$HOME).
+  if [ -d "$VENV" ] && [ -n "$(ls -A "$VENV")" ] && [ ! -f "$VENV/pyvenv.cfg" ]; then
+    echo "ERROR: $VENV exists and is not a Python venv; refusing to overwrite it. Set WI_VENV to a new folder." >&2
+    exit 1
+  fi
   echo "[wi] first run: creating $VENV and installing dependencies (1-2 min)..." >&2
-  "$PY" -m venv "$VENV" || {
+  "$PY" -m venv --clear "$VENV" || {
     echo "ERROR: could not create venv. On Debian/Ubuntu: sudo apt install python3-venv" >&2
     exit 1
   }
   "$(venv_python)" -m pip install --quiet --disable-pip-version-check -r "$REQ" >&2 || {
-    echo "ERROR: could not install the dependencies in $REQ (see pip's output above). This usually means no internet access. Fix that and run the same command again: nothing is kept from a failed install." >&2
+    rm -rf "$VENV"
+    echo "ERROR: could not install the dependencies in $REQ (see pip's output above): no internet access or a broken Python install. Run the same command once more; nothing is kept from a failed install. If it fails again, tell the user the analysis could not run and why, and stop: do not answer from general knowledge." >&2
     exit 4
   }
-  touch "$VENV/.installed"
+  echo "$VENV" > "$VENV/.installed"
 fi
 
 export PYTHONIOENCODING=utf-8
