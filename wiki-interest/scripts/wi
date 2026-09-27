@@ -8,12 +8,16 @@ VENV="${WI_VENV:-$SKILL_DIR/.venv}"
 REQ="$SKILL_DIR/requirements.txt"
 
 find_python() {
-  for py in "${PYTHON:-}" python3 python; do
+  # Echo the real interpreter path. `py -3` is the Windows launcher that python.org always installs,
+  # even without "Add python.exe to PATH"; Store placeholders fail the check and are skipped.
+  local py exe flag
+  for py in "${PYTHON:-}" python3 python py; do
     [ -n "$py" ] || continue
-    if command -v "$py" >/dev/null 2>&1 &&
-       "$py" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
-      echo "$py"; return 0
-    fi
+    command -v "$py" >/dev/null 2>&1 || continue
+    flag=-I; [ "$py" = py ] && flag=-3
+    exe="$("$py" "$flag" -c 'import sys; print(sys.executable if sys.version_info >= (3, 10) else "")' 2>/dev/null | tr -d '\r')" || continue
+    [ -n "$exe" ] || continue
+    echo "${exe//\\//}"; return 0
   done
   return 1
 }
