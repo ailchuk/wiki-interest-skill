@@ -8,6 +8,8 @@ compatibility: Requires bash, Python 3.10+ and internet access to Wikimedia APIs
 
 Run every command as `bash <skill-dir>/scripts/wi <command>`, where `<skill-dir>` is the absolute path of the folder containing this SKILL.md. Run from the user's working directory; results go to `./wiki-research/`.
 
+No `bash` (`bash: command not found`, Windows without Git Bash): run `python <skill-dir>/scripts/wi.py <command>` instead, or `py -3 ...` on Windows. It sets up the same environment, and the commands it prints use that form. If Python itself is missing (`python3: command not found`, or on Windows "Python was not found" / exit code 49 or 9009), stop and tell the user to install Python 3.10+ from python.org; do not try other ways around it.
+
 ## Workflow
 
 1. **Find the articles.** Before searching, name the concepts the question covers. A thing is one concept ("astronomy", "intermittent fasting"). An activity is at least two: "learning English" is the language *and* what learners aim at, the IELTS exam. Run `find` once per concept.

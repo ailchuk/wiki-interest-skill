@@ -35,6 +35,7 @@ Every run: the skill triggered on the first call, no invented article titles, ev
 | 8 | After that change: "Polish readers may read it in English or German" - German came from our list of large editions, not from data. Another run dropped pl from `analyze` and put en in its place, unasked, then called the en trend "global interest". | `find` says the list is where articles exist, not what readers read, and not to name a language; the missing language stays in `--langs`, another edition only on the user's request. Next 3 runs: pl kept, nothing put in its place. |
 | 8 | The blanket "do not name a language" was still broken: a run listed English and German as editions to check. Naming an edition that demonstrably has the article is not an invention, and a rule broken every run weakens the ones next to it. | The rule now separates the two cases: an edition may be named as something to check, never as a claim about who reads what. Next run kept the naming inside "what to research next", where a hypothesis belongs. |
 | 8 | Local test: the skill folder was copied with `cp -r` together with a working `.venv`; a copied venv does not work in a new folder, pip failed, and Haiku then answered from general knowledge ("astronomy has steady demand", competitor advice). | `wi` records where the venv was built and rebuilds a moved one (`venv --clear`), deletes a failed install, and never wipes a folder that is not a venv. The install error and SKILL.md say: tell the user what failed and stop. Rerun with an install that cannot succeed: one retry, then a plain "cannot run the analysis", no answer without data. |
+| 8 | Claude Desktop on Windows (local agent mode): no `bash` on PATH and no Python installed (`python` = the Store stub, exit 49). Nothing from the skill ran, so the model got no `ERROR:` line and tried 10 commands, 8 failed. | `python scripts/wi.py` now works without bash: `bootstrap.py` builds the same `.venv` and the printed commands use that form. SKILL.md: no bash -> python entry; no Python -> tell the user to install it and stop. Tested on Linux without the wrapper; not yet rerun on Windows. |
 
 ## Known limits of a small model
 
@@ -46,7 +47,7 @@ Every run: the skill triggered on the first call, no invented article titles, ev
 
 ## Totals
 
-44 Haiku runs in 8 rounds, $2.98 in total, including prompts in Ukrainian, Polish, Japanese and Arabic. In the final round a question takes 42-92 s and 5-9 tool calls; the cheaper rounds before `check` existed ran 22-61 s and 1-6 calls.
+45 Haiku runs in 8 rounds, $3.04 in total, including prompts in Ukrainian, Polish, Japanese and Arabic. In the final round a question takes 42-92 s and 5-9 tool calls; the cheaper rounds before `check` existed ran 22-61 s and 1-6 calls.
 
 ## Other scripts (round 7, PDF labels in 14 languages)
 

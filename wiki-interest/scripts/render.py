@@ -420,7 +420,8 @@ def _build(run, doc, charts_paths, lang, s, created, extra):
     text(8, t(lang, "limitations"), "B")
     bullets(_limitations(run, lang), 6.8, GREY)
     pdf.ln(1.2 * s)
-    cmd = run["command"].split("/scripts/wi", 1)[-1]
+    # Drop the machine-specific entry ("bash /abs/scripts/wi" or '"python" "C:\...\scripts\wi.py"'), keep the arguments.
+    cmd = re.split(r"scripts[/\\]wi(?:\.py)?\"?", run["command"], maxsplit=1)[-1]
     text(6.5, t(lang, "generated", date=created), color=GREY)
     text(6.5, f"{t(lang, 'reproduce')}: bash wiki-interest/scripts/wi{cmd}", color=GREY)
     return pdf

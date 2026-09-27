@@ -1,13 +1,21 @@
-"""wiki-interest CLI. Run through the wrapper: bash <skill-dir>/scripts/wi <command> ..."""
+"""wiki-interest CLI. Run through the wrapper: bash <skill-dir>/scripts/wi <command> ...
+Without bash: python <skill-dir>/scripts/wi.py <command> ... (bootstrap.py sets up the same .venv)."""
 import argparse
 import csv
 import hashlib
 import json
+import os
 import re
 import shlex
 import sys
 from datetime import date, timedelta
 from pathlib import Path
+
+if __name__ == "__main__":
+    _venv = Path(os.environ.get("WI_VENV") or Path(__file__).resolve().parent.parent / ".venv")
+    if Path(sys.prefix).resolve() != _venv.resolve():  # started outside the skill's venv, e.g. without bash
+        import bootstrap
+        bootstrap.run()
 
 import answer
 import metrics
@@ -16,7 +24,8 @@ import wikiapi
 from i18n import LANGS, chart_lang, lang_or_en, pct, reason
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
-WI = f"bash {SKILL_DIR}/scripts/wi"
+# Commands printed for the agent use the entry it started with (bash wrapper, or python without bash).
+WI = os.environ.get("WI_CMD") or f"bash {SKILL_DIR}/scripts/wi"
 MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 # Exit codes tell the agent what kind of fix is needed (1 = environment, from scripts/wi).
