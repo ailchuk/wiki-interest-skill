@@ -1,0 +1,4 @@
+* text=auto
+# bash scripts must keep LF on Windows checkouts (core.autocrlf), or Git Bash fails on \r
+wiki-interest/scripts/wi text eol=lf
+*.sh text eol=lf

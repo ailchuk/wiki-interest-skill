@@ -6,7 +6,7 @@
 
 ## Швидкий старт
 
-Потрібно: `bash`, Python 3.10+, інтернет. Команди нижче запускаються з кореня репозиторію.
+Потрібно: `bash`, Python 3.10+, інтернет. Команди нижче запускаються з кореня репозиторію. На Windows `bash` дає Git Bash із [Git for Windows](https://git-scm.com/download/win) (його ж використовує Claude Code), а Python ставиться з python.org.
 
 **Як навичка для Claude Code** (2.x):
 
