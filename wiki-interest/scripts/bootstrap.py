@@ -64,6 +64,6 @@ def run():
                   "from general knowledge.", EXIT_NETWORK)
         (path / ".installed").write_text(str(path))
     env = dict(os.environ, PYTHONIOENCODING="utf-8",
-               WI_CMD=f'"{sys.executable}" "{SKILL_DIR / "scripts" / "wi.py"}"')
+               WI_CMD=f'"{Path(sys.executable).as_posix()}" "{(SKILL_DIR / "scripts" / "wi.py").as_posix()}"')
     sys.exit(subprocess.run([str(_venv_python(path)), str(SKILL_DIR / "scripts" / "wi.py"), *sys.argv[1:]],
                             env=env).returncode)

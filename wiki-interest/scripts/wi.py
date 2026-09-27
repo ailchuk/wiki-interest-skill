@@ -24,7 +24,8 @@ from i18n import LANGS, chart_lang, lang_or_en, pct, reason
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 # Commands printed for the agent use the entry it started with (bash wrapper, or python without bash).
-WI = os.environ.get("WI_CMD") or f"bash {SKILL_DIR}/scripts/wi"
+# Forward slashes and quotes: printed commands are pasted into bash, where a Windows "\" would be eaten.
+WI = os.environ.get("WI_CMD") or f'bash "{SKILL_DIR.as_posix()}/scripts/wi"'
 MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 # Exit codes tell the agent what kind of fix is needed (1 = environment, from scripts/wi).
@@ -449,10 +450,10 @@ def _summary(run, out):
     ]
     lines += [
         "",
-        f"Files: {out}/ (metrics.json, monthly.csv, trend.png, growth.png)",
-        f"Before you send the answer, save the draft to answer.md and run: {WI} check {out} --answer answer.md",
+        f"Files: {out.as_posix()}/ (metrics.json, monthly.csv, trend.png, growth.png)",
+        f"Before you send the answer, save the draft to answer.md and run: {WI} check {shlex.quote(out.as_posix())} --answer answer.md",
         f"Rerun or change one parameter: {run['command']}",
-        f"Report: write findings.md (template in SKILL.md), then: {WI} report {out} --findings findings.md "
+        f"Report: write findings.md (template in SKILL.md), then: {WI} report {shlex.quote(out.as_posix())} --findings findings.md "
         f"--lang <user's language: {' '.join(LANGS)}; others: en>",
     ]
     return "\n".join(lines) + "\n"
