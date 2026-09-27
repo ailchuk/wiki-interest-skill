@@ -27,7 +27,7 @@ venv_python() {
 if [ ! -f "$VENV/.installed" ] || [ "$REQ" -nt "$VENV/.installed" ] ||
    [ "$(cat "$VENV/.installed" 2>/dev/null)" != "$VENV" ]; then
   PY="$(find_python)" || {
-    echo "ERROR: Python 3.10+ not found. Install it (python.org, brew install python, apt install python3) or set PYTHON=/path/to/python3." >&2
+    echo "ERROR: Python 3.10+ not found. Install it (python.org, brew install python, apt install python3) or set PYTHON=/path/to/python3. On Windows, python.exe / python3.exe under WindowsApps is only a Microsoft Store placeholder (exit code 49 or 9009), not Python: do not try other paths or PYTHON values; tell the user to install Python 3.10+ from python.org with \"Add python.exe to PATH\", then stop." >&2
     exit 1
   }
   # --clear and rm -rf below wipe $VENV, so never touch a non-empty folder that is not a venv (e.g. WI_VENV=$HOME).
