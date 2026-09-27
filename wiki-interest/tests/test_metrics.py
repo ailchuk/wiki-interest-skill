@@ -90,6 +90,19 @@ class Growth(unittest.TestCase):
         self.assertEqual(level, "LOW")
         self.assertIn("low_volume", codes)
 
+    def test_recent_window_compares_the_same_months_a_year_earlier(self):
+        """'The last 3 months': a rise that starts 3 months before the end shows there, not in a season shift."""
+        recent_start = date.fromisoformat(M.month_bounds(MONTHS[-3])[0].isoformat())
+        m = M.analyze_series(series(lambda d: 20 if d >= recent_start else 10), wiki(), MONTHS)
+        r = m["recent"]
+        self.assertEqual((r["months"], r["period"], r["vs"]), (3, f"{MONTHS[-3]}..{MONTHS[-1]}",
+                                                              f"{MONTHS[-15]}..{MONTHS[-13]}"))
+        self.assertAlmostEqual(r["growth_clean"], 1.0, places=2)
+        self.assertEqual(r["months_up"], 3)
+        self.assertEqual(M.analyze_series(series(lambda d: 10), wiki(), MONTHS, recent=6)["recent"]["growth"], 0)
+        with self.assertRaises(ValueError):
+            M.analyze_series(series(lambda d: 10), wiki(), MONTHS, recent=13)
+
     def test_user_thresholds_override_the_defaults(self):
         """A niche audience of 15/day: LOW by default, trusted once the user lowers the bar."""
         m = M.analyze_series(series(lambda d: 15 if d >= LAST_YEAR_START else 10), wiki(), MONTHS)

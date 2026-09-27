@@ -82,7 +82,7 @@ def views_per_day(daily, months):
     return sum(v for d, v in daily.items() if lo <= d <= hi) / ((end - start).days + 1)
 
 
-def analyze_series(daily, wiki_monthly, months, warmup=0):
+def analyze_series(daily, wiki_monthly, months, warmup=0, recent=3):
     """Metrics for one article.
 
     daily: {'YYYYMMDD': views} (missing days = 0); wiki_monthly: {'YYYY-MM': views of the
@@ -91,7 +91,12 @@ def analyze_series(daily, wiki_monthly, months, warmup=0):
     warmup: days present in `daily` before the period. Spikes are detected over the longer
     series and the warm-up is then dropped, so the metrics do not depend on how far back the
     caller asked. Without it the first days of the baseline year get a truncated median window.
+
+    recent: the short window (1-12 months) for "the last N months" questions, compared with the
+    same months a year earlier so that seasons cancel out.
     """
+    if not 1 <= recent <= 12:
+        raise ValueError("recent must be 1..12 months")
     if len(months) < 24:
         raise ValueError("need at least 24 months: growth compares the last 12 months with the previous 12")
     start = month_bounds(months[0])[0]
@@ -138,6 +143,18 @@ def analyze_series(daily, wiki_monthly, months, warmup=0):
             "adj_growth": change(c_cur / w_cur, c_old / w_old) if w_cur and w_old and c_old else None,
         })
 
+    r_cur, r_old = months[-recent:], months[-12 - recent:-12]
+    rw_cur, rw_old = total(wiki_monthly, r_cur), total(wiki_monthly, r_old)
+    rc_cur, rc_old = total(monthly_clean, r_cur), total(monthly_clean, r_old)
+    recent_block = {
+        "months": recent, "period": f"{r_cur[0]}..{r_cur[-1]}", "vs": f"{r_old[0]}..{r_old[-1]}",
+        "growth": change(total(monthly, r_cur), total(monthly, r_old)),
+        "growth_clean": change(rc_cur, rc_old),
+        "adj_growth": change(rc_cur / rw_cur, rc_old / rw_old) if rw_cur and rw_old and rc_old else None,
+        "months_up": sum(monthly_clean[a] > monthly_clean[b] for a, b in zip(r_cur, r_old)),
+        "views_per_day": total(monthly, r_cur) / ((month_bounds(r_cur[-1])[1] - month_bounds(r_cur[0])[0]).days + 1),
+    }
+
     all_views = sum(values)
     top = sorted(spike_idx, key=lambda i: values[i] - medians[i], reverse=True)[:3]
     return {
@@ -156,6 +173,7 @@ def analyze_series(daily, wiki_monthly, months, warmup=0):
         "top_spikes": [{"date": days[i].isoformat(), "views": values[i], "normal": round(medians[i]),
                         "times": round(values[i] / max(medians[i], 1), 1)} for i in top],
         "yearly": yearly,
+        "recent": recent_block,
         "total_views": all_views,
         "monthly": monthly,
         "monthly_clean": {k: round(v) for k, v in monthly_clean.items()},

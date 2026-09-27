@@ -37,18 +37,20 @@ Every run: the skill triggered on the first call, no invented article titles, ev
 | 8 | Local test: the skill folder was copied with `cp -r` together with a working `.venv`; a copied venv does not work in a new folder, pip failed, and Haiku then answered from general knowledge ("astronomy has steady demand", competitor advice). | `wi` records where the venv was built and rebuilds a moved one (`venv --clear`), deletes a failed install, and never wipes a folder that is not a venv. The install error and SKILL.md say: tell the user what failed and stop. Rerun with an install that cannot succeed: one retry, then a plain "cannot run the analysis", no answer without data. |
 | 8 | Claude Desktop on Windows (local agent mode): no `bash` on PATH and no Python installed (`python` = the Store stub, exit 49). Nothing from the skill ran, so the model got no `ERROR:` line and tried 10 commands, 8 failed. | `python scripts/wi.py` now works without bash: `bootstrap.py` builds the same `.venv` and the printed commands use that form. SKILL.md: no bash -> python entry; no Python -> tell the user to install it and stop. Tested on Linux without the wrapper; not yet rerun on Windows. |
 | 8 | Windows, Claude Desktop: "101 users a day" for 101 views/day. Also found here: printed commands had unquoted `C:\...` paths that bash mangles, the venv marker used the logical path so every symlinked eval workspace rebuilt the venv (a 2-minute pip run that Claude Code moved to the background), and on Windows `.venv` inside Claude Desktop's skill folder passed the 260-character path limit. | Template: "views, never users or visitors"; `check` reminds when such a word appears. Commands printed with forward slashes and quotes; marker uses the physical path; Windows venv at `~/.cache/wiki-interest/venv`. Rerun: "101 перегляд на день", both limitations present, 5 calls, 38 s. |
+| 8 | "Compare over the last 3 months": `--months 3` was refused (growth needs 24 months) and the model, barred from computing numbers, answered it could not. A real product gap: the question is natural and the data was there. | `analyze` always prints `Last N months vs the same months a year earlier` (`--recent N`, 1-12, default 3; seasons cancel), with views/day in the window; `check` and `report` accept those numbers; the `--months` error points to it; `--recent` gets its own run folder. Rerun: the 3-month numbers and views/day right, the 12-month confidence kept apart - but "high confidence" still written next to the 3-month +62%. |
 
 ## Known limits of a small model
 
 - Causes and market claims are the one rule code cannot enforce: `check` can only remind. Runs now hedge them or move them into "what to verify", but a sentence like "the market is saturated" can still reach the user. A judge model would be the honest fix.
 - The basket has to be assembled by the model. When it names the concepts first it does this well, but the second concept it picks is its own choice ("second-language acquisition" rather than IELTS), and a poor choice is not detectable by code.
 - Confidence reasons can be paraphrased wrongly: the ex3 example PDF explains MEDIUM as "variance in the data", while `analyze` gives "trend differs after adjusting". `check` verifies the level word, not its reason.
+- Confidence attached to the wrong number: the 12-month level written next to the 3-month window, although `analyze` says that window has none. `check` verifies numbers, not what they are attached to.
 - Half-followed refinements: the user's lower bound became `--low-views`, the upper bound did not.
 - A passing `check` costs one extra tool call per question, about 10-15 s.
 
 ## Totals
 
-47 Haiku runs in 8 rounds, $3.14 in total, including prompts in Ukrainian, Polish, Japanese and Arabic. In the final round a question takes 42-92 s and 5-9 tool calls; the cheaper rounds before `check` existed ran 22-61 s and 1-6 calls.
+49 Haiku runs in 8 rounds, $3.28 in total, including prompts in Ukrainian, Polish, Japanese and Arabic. In the final round a question takes 42-92 s and 5-9 tool calls; the cheaper rounds before `check` existed ran 22-61 s and 1-6 calls.
 
 ## Other scripts (round 7, PDF labels in 14 languages)
 

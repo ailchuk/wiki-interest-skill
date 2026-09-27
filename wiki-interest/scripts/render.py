@@ -183,6 +183,8 @@ def _percents(run):
                 if m[k] is not None}
         out |= {round(y[k] * 100) for y in m.get("yearly", [])
                 for k in ("growth_clean", "adj_growth") if y[k] is not None}
+        rec = m.get("recent") or {}
+        out |= {round(rec[k] * 100) for k in ("growth", "growth_clean", "adj_growth") if rec.get(k) is not None}
     return out
 
 
@@ -197,6 +199,8 @@ def _counts(run):
             continue
         m = r["metrics"]
         out |= {m["views_per_day"], float(m["months_up"]), float(m["months_down"])}
+        if m.get("recent"):
+            out |= {float(m["recent"]["months"]), float(m["recent"]["months_up"]), m["recent"]["views_per_day"]}
         out |= {float(s["views"]) for s in m["top_spikes"]} | {float(s["times"]) for s in m["top_spikes"]}
         out |= {a["views_per_day"] for a in r.get("articles", []) if a.get("views_per_day") is not None}
     return out
@@ -246,6 +250,11 @@ def allowed_values(run):
             m = r["metrics"]
             years = "".join(f"; {y['period']}: w/o spikes {pct(y['growth_clean'])}, adjusted {pct(y['adj_growth'])}"
                             for y in m.get("yearly", [])[:-1])
+            rec = m.get("recent")
+            if rec:
+                years += (f"; last {rec['months']} months vs a year earlier: growth {pct(rec['growth'])}, "
+                          f"w/o spikes {pct(rec['growth_clean'])}, adjusted {pct(rec['adj_growth'])}, "
+                          f"up {rec['months_up']}/{rec['months']}, views/day {rec['views_per_day']:.1f}")
             spikes = "".join(f"; spike {s['date']}: {s['views']} views, {s['times']}x normal"
                              for s in m["top_spikes"])
             if len(r.get("articles", [])) > 1:

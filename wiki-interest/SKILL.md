@@ -36,6 +36,7 @@ No `bash` (`bash: command not found`, Windows without Git Bash): run `python <sk
 - `adjusted`: change in the article's share of all views of that Wikipedia. **Main interest signal**: total Wikipedia traffic is falling (AI answers, bot reclassification in 2025), so raw declines are often not lost interest.
 - `confidence` HIGH / MEDIUM / LOW with reasons, computed by the tool. LOW = trend not confirmed.
 - Rank: by adjusted growth, LOW confidence last. `--sort volume` if the user cares about audience size.
+- "Last N months" questions: do not shorten `--months`. Use the `Last N months vs the same months a year earlier` block (`--recent N`, 1-12, default 3), call it the recent direction rather than a trend, and say the confidence levels are for 12 months.
 - Multi-year questions: run with `--months 36` (or more) and use the `Year by year` block with its `improving / worsening / about the same` labels. The main table always compares the last 12 months with the previous 12.
 
 ## Rules

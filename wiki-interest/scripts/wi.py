@@ -147,7 +147,12 @@ def _pick(values, lang):
 
 def cmd_analyze(args):
     if args.months < 24:
-        raise UsageError("--months must be >= 24 (growth compares the last 12 months with the previous 12).")
+        raise UsageError("--months is how much history to load and must be >= 24 (the main table compares the "
+                         "last 12 months with the previous 12). For 'the last N months' do not shorten it: every "
+                         "run prints 'Last N months vs the same months a year earlier'; set N with --recent N "
+                         "(1-12, default 3).")
+    if not 1 <= args.recent <= 12:
+        raise UsageError(f"--recent must be 1..12 months, got {args.recent}.")
     if not 0 < args.low_views < args.high_views:
         raise UsageError(f"--low-views must be above 0 and below --high-views, "
                          f"got {args.low_views:g} and {args.high_views:g}.")
@@ -217,7 +222,7 @@ def cmd_analyze(args):
             row["status"] = "no_views"
             continue
         wiki_monthly = wikiapi.project_monthly(w["project"], start_day, end_day)
-        m = metrics.analyze_series(daily, wiki_monthly, months, warmup)
+        m = metrics.analyze_series(daily, wiki_monthly, months, warmup, args.recent)
         m["wiki_monthly"] = wiki_monthly
         row["metrics"] = m
         row["confidence"], row["reasons"] = metrics.confidence(m, args.low_views, args.high_views)
@@ -229,6 +234,8 @@ def cmd_analyze(args):
     cmd += [f"--article={shlex.quote(f'{c}:{t}')}" for c, ts in overrides.items() for t in ts]
     if args.sort != "confidence":
         cmd += ["--sort", args.sort]
+    if args.recent != 3:
+        cmd += ["--recent", str(args.recent)]
     thresholds = {"low_views": args.low_views, "high_views": args.high_views}
     custom = {k: v for k, v in thresholds.items() if v != DEFAULT_THRESHOLDS[k]}
     for key, value in custom.items():
@@ -239,8 +246,10 @@ def cmd_analyze(args):
         "thresholds": thresholds, "command": " ".join(cmd), "rows": rows,
     }
 
-    # Runs that differ only by article overrides or thresholds must not overwrite each other.
+    # Runs that differ only by article overrides, thresholds or --recent must not overwrite each other.
     variant = dict(overrides, **{f"threshold_{k}": v for k, v in custom.items()})
+    if args.recent != 3:
+        variant["recent"] = args.recent
     slug = f"{'-'.join(qids) or 'articles'}_{'-'.join(run['langs'])}_{months[0]}_{months[-1]}"
     if variant:
         slug += "_" + hashlib.sha1(json.dumps(variant, sort_keys=True).encode()).hexdigest()[:6]
@@ -415,6 +424,17 @@ def _summary(run, out):
             ys = r["metrics"]["yearly"]
             steps = "; ".join(f"{y['period']}: {pct(y['growth_clean'])} / {pct(y['adj_growth'])}" for y in ys)
             lines.append(f"- {r['code']}: {steps} -> {_year_change(ys[-2]['adj_growth'], ys[-1]['adj_growth'])}")
+    if ok and ok[0]["metrics"].get("recent"):
+        rec = ok[0]["metrics"]["recent"]
+        lines += ["", f"## Last {rec['months']} months ({rec['period']}) vs the same months a year earlier ({rec['vs']})",
+                  "For 'the last N months' questions (N set by --recent). Same months a year apart, so seasons "
+                  "cancel. Growth / w/o spikes / adjusted, months up, views/day in this window. A short window is "
+                  "moved by a few news days: call it the recent direction, not a trend. It has NO confidence level: "
+                  "never put HIGH/MEDIUM/LOW next to these numbers - those levels are for the 12-month table."]
+        for r in ok:
+            x = r["metrics"]["recent"]
+            lines.append(f"- {r['code']}: {pct(x['growth'])} / {pct(x['growth_clean'])} / {pct(x['adj_growth'])}, "
+                         f"up {x['months_up']}/{x['months']}, {_vpd(x['views_per_day'])} views/day")
     spikes = [(r["code"], s) for r in run["rows"] if r["status"] == "ok" for s in r["metrics"]["top_spikes"]]
     if spikes:
         lines += ["", "## Top spike days"]
@@ -483,6 +503,9 @@ def build_parser():
                         'lecznicza". Repeating one language replaces that language\'s whole basket.')
     a.add_argument("--months", type=int, default=24, help="Months to analyze, >= 24 (default 24).")
     a.add_argument("--end", help="Last month YYYY-MM (default: last complete month).")
+    a.add_argument("--recent", type=int, default=3, metavar="N",
+                   help="Short window for 'the last N months' questions, 1-12 (default 3): the last N months vs "
+                        "the same N months a year earlier.")
     a.add_argument("--sort", default="confidence", choices=metrics.SORTS,
                    help="Ranking: confidence (default), growth (adjusted), volume (views/day).")
     a.add_argument("--low-views", type=float, default=metrics.LOW_VOLUME, metavar="N",
