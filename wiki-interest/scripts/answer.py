@@ -27,9 +27,14 @@ NOT_PAYING = re.compile(
     r"\bpay|\bплат|\bpłac|\bplatit|\bplac[eí]|\bzahl|\bpagar|\bpayer|\böde|\btrả tiền|\bchi trả"
     r"|支払|課金|付费|支付|الدفع|تدفع|भुगतान", re.IGNORECASE)
 
+def _stem(word):
+    """Cut the last two letters off, so an inflected form still matches: НИЗЬКА also covers НИЗЬКІЙ."""
+    return word[:max(3, len(word) - 2)]
+
+
 # Every locale's word for each level, plus the English one: models often keep "LOW" verbatim.
-CONF_RE = {lvl: re.compile("|".join(sorted({rf"\b{re.escape(loc[lvl])}" for loc in TEXT.values()} | {rf"\b{lvl}"})),
-                           re.IGNORECASE)
+CONF_RE = {lvl: re.compile("|".join(sorted({rf"\b{re.escape(_stem(loc[lvl]))}" for loc in TEXT.values()}
+                                           | {rf"\b{lvl}"})), re.IGNORECASE)
            for lvl in ("HIGH", "MEDIUM", "LOW")}
 
 BOT_MONTHS = ("2025-03", "2025-08")  # the Wikimedia bot reclassification window

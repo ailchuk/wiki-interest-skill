@@ -22,6 +22,7 @@ MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 # Exit codes tell the agent what kind of fix is needed (1 = environment, from scripts/wi).
 EXIT_USAGE, EXIT_FINDINGS, EXIT_NETWORK = 2, 3, 4
 DEFAULT_THRESHOLDS = {"low_views": metrics.LOW_VOLUME, "high_views": metrics.HIGH_VOLUME}
+MAX_BASKET = 5  # articles per language in one run; more makes the table and the PDF unreadable
 
 
 class UsageError(Exception):
@@ -41,7 +42,9 @@ def cmd_find(args):
         candidates = candidates[:args.limit]
     if not candidates:
         print(f'No Wikidata item found for "{args.topic}" (searched in {args.query_lang} and en).')
-        print("Try an English name or a more specific term.")
+        print("Wikidata holds concepts, not phrases: try the English name, or a shorter one. A broad intent is "
+              'several concepts, so search for each on its own ("English language", then "IELTS") and analyze '
+              "them together as --qid Q1,Q2.")
         return EXIT_USAGE
 
     label_langs = [args.query_lang] + [w["code"] for w in langs]
@@ -63,30 +66,50 @@ def cmd_find(args):
         print(f"\nNext: add --langs <codes> to see article titles per language.")
         return 0
 
-    top = candidates[0]["qid"]
-    ent = ents.get(top, {"sitelinks": {}, "labels": {}})
-    print(f"\n## Articles for {top} (candidate 1)")
-    print("| lang | article |\n|---|---|")
-    missing = []
+    # Items given by hand are a basket to measure together; items from a search are rival readings of the topic.
+    basket = [c["qid"] for c in (candidates if args.qid else candidates[:1]) if c["qid"] in ents]
+    if not basket:
+        print("None of those items exist on Wikidata.")
+        return EXIT_USAGE
+
+    print(f"\n## Articles for " + (" + ".join(basket) if len(basket) > 1 else f"{basket[0]} (candidate 1)"))
+    print("| lang | " + " | ".join(_pick(ents[q]["labels"], args.query_lang) or q for q in basket) + " |")
+    print("|---" * (len(basket) + 1) + "|")
+    missing, partial = [], []
     for w in langs:
-        title = ent["sitelinks"].get(w["dbname"])
-        if title:
-            print(f"| {w['code']} | {title} |")
-            continue
-        missing.append(w["code"])
-        query = ent["labels"].get(w["code"]) or ent["labels"].get("en") or args.topic or ""
-        similar = wikiapi.search_wiki(w["project"], query) if query else []
-        hint = f" similar in {w['code']}: {'; '.join(similar)}" if similar else ""
-        print(f"| {w['code']} | MISSING: no article in {w['english']} Wikipedia.{hint} |")
+        found = {q: ents[q]["sitelinks"].get(w["dbname"]) for q in basket}
+        gaps = [q for q, title in found.items() if not title]
+        cells = []
+        for q in basket:
+            if found[q]:
+                cells.append(found[q])
+                continue
+            # Suggesting a replacement only makes sense when the language has nothing at all.
+            query = ents[q]["labels"].get(w["code"]) or ents[q]["labels"].get("en") or args.topic or ""
+            similar = wikiapi.search_wiki(w["project"], query) if query and len(gaps) == len(basket) else []
+            cells.append("MISSING" + (f" - similar: {'; '.join(similar)}" if similar else ""))
+        print(f"| {w['code']} | " + " | ".join(cells) + " |")
+        if len(gaps) == len(basket):
+            missing.append(w["code"])
+        elif gaps:
+            partial.append(w["code"])
 
     codes = ",".join(w["code"] for w in langs)
-    print(f"\nNext: {WI} analyze {top} --langs {codes}")
+    print(f"\nNext: {WI} analyze {','.join(basket)} --langs {codes}")
+    if len(basket) == 1:
+        print(f"Is this one article the whole topic the user means? A broad intent is not: 'learning English' is the "
+              f"language plus the exams people study for. If so, run find for the other concept, then analyze both "
+              f"as one basket: {WI} analyze {basket[0]},<second QID> --langs {codes}")
     if missing:
         print(f"MISSING languages ({','.join(missing)}) are reported as 'no article': interest there cannot be measured. "
               "Do not replace them with a broader topic (e.g. 'fasting' for 'intermittent fasting'). Only if a similar "
               f'article is the SAME concept: add --article {missing[0]}:"Exact Title" and call it a proxy.')
-    if len(candidates) > 1:
-        print("If candidate 1 is the wrong concept, rerun find with --qid <QID> of the right candidate.")
+    if partial:
+        print(f"{','.join(partial)} have only part of the basket, so fewer articles are counted there. `analyze` says "
+              "which one is missing; report it before comparing that language with the others.")
+    if len(candidates) > 1 and not args.qid:
+        print("The candidates above are rival readings of the same words, not parts of one topic: if candidate 1 is "
+              "the wrong concept, rerun find with --qid <QID> of the right one.")
     return 0
 
 
@@ -105,10 +128,13 @@ def cmd_analyze(args):
         code, sep, title = item.partition(":")
         if not sep or not title.strip():
             raise UsageError(f'--article must look like pl:"Exact Title", got {item!r}')
-        overrides[code.strip().lower()] = title.strip()
-    qid = args.qid.upper() if args.qid else None
-    if not qid and not overrides:
+        overrides.setdefault(code.strip().lower(), []).append(title.strip())
+    qids = list(dict.fromkeys(q.strip().upper() for q in args.qid.split(","))) if args.qid else []
+    if not qids and not overrides:
         raise UsageError("give a Wikidata QID (from `find`) or --article lang:Title.")
+    if len(qids) > MAX_BASKET:
+        raise UsageError(f"--qid takes at most {MAX_BASKET} Wikidata items, got {len(qids)}. A bigger basket makes "
+                         f"the report unreadable; analyze the rest separately.")
 
     lang_spec = ",".join(filter(None, [args.langs or ""] + list(overrides)))
     wikis = wikiapi.resolve_langs(lang_spec)
@@ -129,23 +155,36 @@ def cmd_analyze(args):
     warm_start = max(start_day - timedelta(days=metrics.SPIKE_WARMUP), metrics.month_bounds(metrics.DATA_START)[0])
     warmup = (start_day - warm_start).days
 
-    ent = {"labels": {}, "sitelinks": {}}
-    if qid:
-        ent = wikiapi.entities([qid], [w["code"] for w in wikis]).get(qid)
-        if not ent:
-            raise UsageError(f"{qid} not found on Wikidata. Run find first.")
-    label = _pick(ent["labels"], "en") if ent["labels"] else "custom articles"
+    ents = wikiapi.entities(qids, [w["code"] for w in wikis]) if qids else {}
+    unknown = [q for q in qids if q not in ents]
+    if unknown:
+        raise UsageError(f"{', '.join(unknown)} not found on Wikidata. Run find first.")
+    topics = {q: _pick(ents[q]["labels"], "en") or q for q in qids}
+    label = " + ".join(topics.values()) if topics else "custom articles"
 
     rows = []
+    last12 = months[-12:]
     for w in wikis:
+        # Several items = a topic basket: the language's views are the sum of its articles. An override
+        # replaces that language's whole basket, because which item it stands for cannot be guessed.
+        titles = overrides.get(w["code"])
+        arts = [{"qid": None, "title": t, "proxy": True} for t in titles] if titles else \
+               [{"qid": q, "title": ents[q]["sitelinks"][w["dbname"]], "proxy": False}
+                for q in qids if w["dbname"] in ents[q]["sitelinks"]]
         row = {"code": w["code"], "english": w["english"], "project": w["project"],
-               "title": overrides.get(w["code"]) or ent["sitelinks"].get(w["dbname"]),
-               "proxy": w["code"] in overrides, "status": "ok", "confidence": None, "reasons": [], "rank": None}
+               "title": " + ".join(a["title"] for a in arts) or None, "articles": arts,
+               "absent": [] if titles else [topics[q] for q in qids if w["dbname"] not in ents[q]["sitelinks"]],
+               "proxy": bool(titles), "status": "ok", "confidence": None, "reasons": [], "rank": None}
         rows.append(row)
-        if not row["title"]:
+        if not arts:
             row["status"] = "missing"
             continue
-        daily = wikiapi.article_daily(w["project"], row["title"], warm_start, end_day)
+        daily = {}
+        for a in arts:
+            one = wikiapi.article_daily(w["project"], a["title"], warm_start, end_day)
+            a["views_per_day"] = round(metrics.views_per_day(one, last12), 1)
+            for day, views in one.items():
+                daily[day] = daily.get(day, 0) + views
         if not sum(daily.values()):
             row["status"] = "no_views"
             continue
@@ -157,9 +196,9 @@ def cmd_analyze(args):
         row["trend"] = metrics.trend(m)
     rows = metrics.rank(rows, args.sort)
 
-    cmd = [WI, "analyze"] + ([qid] if qid else []) + ["--langs", ",".join(w["code"] for w in wikis),
-                                                       "--months", str(len(months)), "--end", end]
-    cmd += [f"--article={shlex.quote(f'{c}:{t}')}" for c, t in overrides.items()]
+    cmd = [WI, "analyze"] + ([",".join(qids)] if qids else []) + ["--langs", ",".join(w["code"] for w in wikis),
+                                                                  "--months", str(len(months)), "--end", end]
+    cmd += [f"--article={shlex.quote(f'{c}:{t}')}" for c, ts in overrides.items() for t in ts]
     if args.sort != "confidence":
         cmd += ["--sort", args.sort]
     thresholds = {"low_views": args.low_views, "high_views": args.high_views}
@@ -167,14 +206,14 @@ def cmd_analyze(args):
     for key, value in custom.items():
         cmd += [f"--{key.replace('_', '-')}", f"{value:g}"]
     run = {
-        "created": date.today().isoformat(), "qid": qid, "label": label,
+        "created": date.today().isoformat(), "qid": ",".join(qids) or None, "topics": topics, "label": label,
         "langs": [w["code"] for w in wikis], "months": months, "sort": args.sort,
         "thresholds": thresholds, "command": " ".join(cmd), "rows": rows,
     }
 
     # Runs that differ only by article overrides or thresholds must not overwrite each other.
     variant = dict(overrides, **{f"threshold_{k}": v for k, v in custom.items()})
-    slug = f"{qid or 'articles'}_{'-'.join(run['langs'])}_{months[0]}_{months[-1]}"
+    slug = f"{'-'.join(qids) or 'articles'}_{'-'.join(run['langs'])}_{months[0]}_{months[-1]}"
     if variant:
         slug += "_" + hashlib.sha1(json.dumps(variant, sort_keys=True).encode()).hexdigest()[:6]
     out = Path(args.out) / slug
@@ -208,13 +247,20 @@ def cmd_check(args):
         print("Values in the data:")
         print("\n".join(f"- {v}" for v in render.allowed_values(run)))
     else:
-        print("Numbers and signs: every one of them is in the data.")
-    print("Not checkable by code, check yourself:")
+        print("ANSWER CHECKED: every number and sign in it comes from the data.")
+    print("Not checkable by code, so read the answer once against this list:")
     print("\n".join(f"- {r}" for r in reminders))
     if problems and not args.force:
         print("Rewrite the answer and run check again. Use --force only for numbers that are not metrics "
               "(e.g. the user's own targets).")
         return EXIT_FINDINGS
+    # Without this the model tends to re-check an answer that already passed, then reply with an
+    # unchecked summary of it - which is the one text the user actually reads.
+    print("Done: this answer passed. Two things are left.")
+    print("1. Did the user ask for a report, a PDF or something to share? Then run `report` now and give them the "
+          "file path. Your chat message is not the report.")
+    print(f"2. Send the text of {path} as your reply, word for word: do not shorten it, do not restyle it, and do "
+          f"not run check again. A summary you write instead of it is not checked by anything.")
     return 0
 
 
@@ -305,18 +351,29 @@ def _summary(run, out):
         "",
         f"Adjusted = change in the article's share of all views of that Wikipedia (removes the overall traffic "
         f"trend). Ranked by {by}.",
-        "",
-        "## Why this confidence",
     ]
+    if len(run.get("topics") or {}) > 1:
+        lines += ["", "## Topic basket (a language's views are the sum of its articles)"]
+        for r in run["rows"]:
+            parts = " + ".join(f"{a['title']} ({_vpd(a['views_per_day'])}/day)" for a in r["articles"])
+            gap = (f" - no article for {', '.join(r['absent'])}, so fewer articles are counted here than elsewhere"
+                   if r["absent"] else "")
+            lines.append(f"- {r['code']}: {parts or 'nothing from this basket'}{gap}")
+    lines += ["", "## Why this confidence"]
     th = run.get("thresholds", DEFAULT_THRESHOLDS)
     if th != DEFAULT_THRESHOLDS:
         lines.append(f"Thresholds set by the user, not the defaults ({DEFAULT_THRESHOLDS['low_views']:g}/"
                      f"{DEFAULT_THRESHOLDS['high_views']:g}): under {th['low_views']:g} views/day = LOW, "
                      f"{th['high_views']:g}+ needed for HIGH. Say so when you report confidence.")
+    else:
+        lines.append(f"Default thresholds: under {th['low_views']:g} views/day = LOW, {th['high_views']:g}+ needed "
+                     f"for HIGH. If the user said what audience size matters to them, rerun with --low-views N "
+                     f"--high-views N so confidence answers their question and not the default one.")
     for r in run["rows"]:
         if r["status"] == "missing":
-            lines.append(f"- {r['code']}: no article in {r['english']} Wikipedia. Interest there cannot be measured; "
-                         f"`find` lists similar articles.")
+            what = f" for {', '.join(r['absent'])}" if r["absent"] else ""
+            lines.append(f"- {r['code']}: no article in {r['english']} Wikipedia{what}. Interest there cannot be "
+                         f"measured; `find` lists similar articles.")
         elif r["status"] == "no_views":
             lines.append(f"- {r['code']}: article '{r['title']}' had no views in the period (wrong title?).")
         else:
@@ -347,6 +404,9 @@ def _summary(run, out):
     if any(r["status"] == "missing" for r in run["rows"]):
         must.append("Languages without an article cannot be measured. Do not replace them with a broader or different "
                     "topic and do not compare such a substitute with the other languages.")
+    if any(r["status"] == "ok" and r["absent"] for r in run["rows"]):
+        must.append("A language missing part of the basket has fewer articles counted, so its total is smaller for "
+                    "that reason alone: name the missing article before you rank or compare that language.")
     lines += ["", "## Answer rules"] + [f"- {m}" for m in must]
     lines += [
         "",
@@ -354,7 +414,9 @@ def _summary(run, out):
         "1. Direct answer in one sentence.",
         "2. One line per language edition, in rank order: '<Language>-language Wikipedia' (never a country name or flag), "
         "adjusted growth, confidence + reason. Numbers only from the table above; no sums or new numbers.",
-        "3. What to research next and what to verify there (from the data, no market claims).",
+        "3. What to research next and what to verify there. Name only things this data can point at: a language "
+        "edition, a period, an article. Never a cause, a market or a competitor - 'the Vietnamese web is growing', "
+        "'the market is saturated', 'other platforms are replacing Wikipedia' are inventions, not findings.",
         "4. Limitations, translated: 'A language edition is not a country; views show curiosity, not willingness "
         "to pay.'" + (" Add the bot reclassification note." if months[0] <= "2025-08" else ""),
     ]
@@ -382,10 +444,14 @@ def build_parser():
     f.set_defaults(func=cmd_find)
 
     a = sub.add_parser("analyze", help="Fetch pageviews, compute metrics, rank languages, draw charts.")
-    a.add_argument("qid", nargs="?", help="Wikidata item from `find`, e.g. Q1666254.")
+    a.add_argument("qid", nargs="?", metavar="QID[,QID...]",
+                   help="Wikidata item from `find`, e.g. Q1666254. Several comma-separated items form one topic "
+                        f"basket (max {MAX_BASKET}): each language's views are the sum of its articles, which is how "
+                        "to measure a broad intent such as Q1860,Q212262 for learning English.")
     a.add_argument("--langs", help="Wikipedia language codes, comma-separated: pl,cs")
     a.add_argument("--article", action="append", metavar='LANG:"Title"',
-                   help='Use this article for a language (proxy or no QID). Repeatable: --article pl:"Głodówka lecznicza"')
+                   help='Use this article for a language (proxy or no QID). Repeatable: --article pl:"Głodówka '
+                        'lecznicza". Repeating one language replaces that language\'s whole basket.')
     a.add_argument("--months", type=int, default=24, help="Months to analyze, >= 24 (default 24).")
     a.add_argument("--end", help="Last month YYYY-MM (default: last complete month).")
     a.add_argument("--sort", default="confidence", choices=metrics.SORTS,

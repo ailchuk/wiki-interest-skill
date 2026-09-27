@@ -1,25 +1,17 @@
 # Eval results: Claude Haiku 4.5 via Claude Code 2.1.283
 
-Prompts and checklist: [prompts.md](prompts.md). Each run starts in a fresh workspace with only this skill installed (`bash evals/run.sh`). Date: 2026-09-26.
+Prompts and checklist: [prompts.md](prompts.md). Each run starts in a fresh workspace with only this skill installed (`bash evals/run.sh`). Dates: 2026-09-26 and 2026-09-27.
 
-## Final round (after all fixes)
-
-| Case | Tool calls | Time | Cost | Result |
-|---|---|---|---|---|
-| ex1 pl vs cs, fasting | 3 | 31 s | $0.047 | Pass. Says the comparison is impossible (no pl article), reports cs with LOW confidence, limitations incl. 2025 bot reclassification. |
-| ex2 astronomy, uk | 3 | 26 s | $0.045 | Pass. -48% adjusted, LOW because 18 views/day, limitations. |
-| pl (Polish prompt + PDF) | 5 | 41 s | $0.059 | Pass. Answer in Polish, PDF with English labels, numbers check passed. |
-| ex3 English, 6 editions + PDF | 6 | 60 s | $0.074 | Partial. Numbers, ranking and PDF correct; the chat answer adds causes not in the data ("economic growth of Vietnam") and skips limitations. The same case passed fully in round 4. |
-| ex3-follow (+pt, 3 years) | 1 | 22 s | $0.096 | Partial. One cached `analyze` call, year-by-year numbers and labels read correctly; still uses a flag emoji and "accelerating" for a single +2% year. |
-
-Every run: skill triggered on the first call, no invented article titles, every number traceable to `analyze` output, PDFs one page.
-
-## Other scripts (after adding PDF labels in 14 languages)
+## Final round (round 8, everything below already fixed)
 
 | Case | Tool calls | Time | Cost | Result |
 |---|---|---|---|---|
-| ja (Japanese prompt + PDF) | 5 | 43 s | $0.058 | Pass. Answer in Japanese, `--lang ja`, Noto Sans JP downloaded once, numbers check passed. |
-| ar (Arabic prompt + PDF) | 5 | 39 s | $0.060 | Pass. Answer in Arabic, `--lang ar`, right-to-left shaped PDF ([example](examples/ar-astronomy-report.pdf)); -40% / -49% adjusted match the data. Limitations only in the PDF, not in the chat answer. |
+| ex1 pl vs cs, fasting | 6 | 45 s | $0.053 | Pass. Says the comparison is impossible (no pl article), reports cs with LOW confidence and its reason, limitations incl. the 2025 bot reclassification. |
+| ex2 astronomy, uk | 5 | 46 s | $0.039 | Pass. -47% adjusted, LOW because 18 views/day, answers the trust question directly. |
+| ex3 English, 6 editions + PDF | 9 | 92 s | $0.076 | Pass. Finds two concepts, analyzes them as one basket, names the editions that hold only part of it, PDF in one page ([example](examples/ex3-english-learning-report.pdf)). |
+| th "we launch above 200/day, below 50 is pointless" | 7 | 59 s | $0.052 | Partial. Reruns with `--low-views 50` and Polish drops to LOW as the user would want; `--high-views 200` still missed. |
+
+Every run: the skill triggered on the first call, no invented article titles, every number traceable to `analyze` output, `check` run before replying, PDFs one page.
 
 ## What the rounds changed
 
@@ -33,13 +25,28 @@ Every run: skill triggered on the first call, no invented article titles, every 
 | 2 | Language editions named as countries; invented sum "es + pt = 541 views/day". | Table shows "Vietnamese (vi)"; answer template: no country names, no sums or new numbers. Round 3+: no invented numbers. |
 | 3 | Follow-up "3 years": identical numbers read as "stable for 3 years". Real product gap: `--months` only extended the chart. | Year-by-year growth for every 12-month block, with code-computed labels `improving / worsening / about the same`. |
 | 4 | "-16% -> -15%" called "worse"; Polish user got Ukrainian PDF labels. | Labels computed in code (round 5 read them correctly); report hint no longer suggests `uk`. |
+| 8 | With `check` added, Haiku ran it four times on an answer that had already passed, edited between each, then replied with a fresh summary it never checked. 16 tool calls, 151 s. | On success `check` says the answer passed, and to send the file word for word without checking again. Next run: 5 calls, 60 s, and the reply was the checked text. |
+| 8 | That fix swallowed the PDF: "send it" was read as the end of the job. | `check` lists `report` as the first of the two remaining steps, and SKILL.md says the chat message is not the report. |
+| 8 | "Learning English" still measured by one article, after both SKILL.md and a `find` hint asked for more. | SKILL.md now starts by naming the concepts a question covers: a thing is one, an activity at least two. Next run searched twice and analyzed `Q1860,Q1455178` as a basket. |
+| 8 | "The Vietnamese web is growing" given as the cause of a trend. | The answer template names the three inventions to avoid, in those words. Later runs move such guesses into "what to verify" instead. |
+| 8 | The user's own audience size ("from 200 a day") was ignored and the thresholds stayed at the defaults. | `analyze` prints the thresholds in use and the flags that change them. Next run used `--low-views 50`. |
+| 8 | `check` called the level missing when the answer wrote the inflected "НИЗЬКІЙ" for "НИЗЬКА", and rejected "20" although `analyze` prints it in every LOW reason. | Confidence words matched by stem; thresholds count as values the tool printed. |
 
 ## Known limits of a small model
 
-- Chat answers still vary between runs on the widest case (ex3): sometimes speculative causes or missing limitations. PDFs are safer: numbers are checked and limitations are added by code.
-- Broad intents: SKILL.md asks for 2-3 related articles ("learning English" = English language + IELTS); Haiku analyzed a second article in 1 of 5 ex3 runs. A built-in article basket would make this reliable.
-- Next step: a `check` command for the chat answer (same numbers check + required limitations), or a hook that runs it before the reply.
+- Causes and market claims are the one rule code cannot enforce: `check` can only remind. Runs now hedge them or move them into "what to verify", but a sentence like "the market is saturated" can still reach the user. A judge model would be the honest fix.
+- The basket has to be assembled by the model. When it names the concepts first it does this well, but the second concept it picks is its own choice ("second-language acquisition" rather than IELTS), and a poor choice is not detectable by code.
+- Half-followed refinements: the user's lower bound became `--low-views`, the upper bound did not.
+- A passing `check` costs one extra tool call per question, about 10-15 s.
 
 ## Totals
 
-23 Haiku runs in 7 rounds, $1.60 in total, 22-61 s and 1-6 tool calls per question.
+36 Haiku runs in 8 rounds, $2.51 in total, including prompts in Ukrainian, Polish, Japanese and Arabic. In the final round a question takes 45-92 s and 5-9 tool calls; the cheaper rounds before `check` existed ran 22-61 s and 1-6 calls.
+
+## Other scripts (round 7, PDF labels in 14 languages)
+
+| Case | Tool calls | Time | Cost | Result |
+|---|---|---|---|---|
+| pl (Polish prompt + PDF) | 5 | 41 s | $0.059 | Pass. Answer in Polish, PDF with Polish labels, numbers check passed. |
+| ja (Japanese prompt + PDF) | 5 | 43 s | $0.058 | Pass. Answer in Japanese, `--lang ja`, Noto Sans JP downloaded once, numbers check passed. |
+| ar (Arabic prompt + PDF) | 5 | 39 s | $0.060 | Pass. Answer in Arabic, `--lang ar`, right-to-left shaped PDF ([example](examples/ar-astronomy-report.pdf)); -40% / -49% adjusted match the data. Limitations only in the PDF, not in the chat answer - the gap `check` was built to close. |

@@ -33,6 +33,8 @@
  "a_spikes": "Sıçrama = olağan görüntülenmesinin 3 katından fazlasını alan gün (+-14 günün medyanı); «sıçramasız» bu günleri olağan düzeyle değiştirir.",
  "a_adjusted": "«Düzeltilmiş» = maddenin o Vikipedi'nin tüm görüntülemeleri içindeki payının değişimi; böylece genel trafik düşüşü ilgi kaybı olarak okunmaz.",
  "a_thresholds": "Güven eşikleri varsayılanlar ({dlow}/{dhigh}) yerine kullanıcı tarafından belirlendi: günde {low} görüntülemenin altı = DÜŞÜK, YÜKSEK için {high}+ gerekir.",
+ "a_basket": "Konu {n} kavramdan oluşan bir sepet olarak ölçüldü ({topics}): her dilin görüntülenmeleri kendi makalelerinin toplamıdır.",
+ "a_partial": "{langs} dilinde sepet eksik: orada daha az makale sayılıyor, bu yüzden toplam sırf bu nedenle düşük.",
  "l_interest": "Görüntülenmeler merakı ölçer, ödeme isteğini değil.",
  "l_country": "Bir dil sürümü bir ülke değildir: bir dilin okurları birçok ülkede yaşar ve birçok kişi Vikipedi'yi başka dillerde okur.",
  "l_proxy": "Tek bir madde konunun yalnızca bir yaklaşığıdır; ilgili maddeler ve diğer kaynaklar (arama, yapay zekâ asistanları, video) kapsanmaz.",

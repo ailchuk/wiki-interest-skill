@@ -33,6 +33,8 @@
  "a_spikes": "Pico = dia com mais de 3 vezes as visualizações habituais (mediana de +-14 dias); «sem picos» substitui esses dias pelo nível habitual.",
  "a_adjusted": "«Ajustado» = variação da participação do artigo em todas as visualizações dessa Wikipédia, para que uma queda geral do tráfego não seja lida como perda de interesse.",
  "a_thresholds": "Limiares de confiança definidos pelo utilizador em vez dos padrões ({dlow}/{dhigh}): abaixo de {low} visualizações/dia = BAIXA, para ALTA são precisas {high}+.",
+ "a_basket": "O tema é medido como um cesto de {n} conceitos ({topics}): as visualizações de cada idioma são a soma dos seus artigos.",
+ "a_partial": "Em {langs} o cesto está incompleto: contam-se menos artigos ali, portanto o total é menor só por isso.",
  "l_interest": "Visualizações medem curiosidade, não disposição para pagar.",
  "l_country": "Uma edição linguística não é um país: leitores de um idioma vivem em muitos países, e muitas pessoas leem a Wikipédia em outros idiomas.",
  "l_proxy": "Um artigo é apenas uma aproximação do tema; artigos relacionados e outras fontes (busca, assistentes de IA, vídeo) não estão incluídos.",

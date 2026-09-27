@@ -74,6 +74,14 @@ def sign(x):
     return 1 if x > 0 else -1
 
 
+def views_per_day(daily, months):
+    """Average daily views over the given months. Used per article in a basket, so that the parts
+    add up to the combined figure instead of being computed over a different window."""
+    start, end = month_bounds(months[0])[0], month_bounds(months[-1])[1]
+    lo, hi = start.strftime("%Y%m%d"), end.strftime("%Y%m%d")
+    return sum(v for d, v in daily.items() if lo <= d <= hi) / ((end - start).days + 1)
+
+
 def analyze_series(daily, wiki_monthly, months, warmup=0):
     """Metrics for one article.
 

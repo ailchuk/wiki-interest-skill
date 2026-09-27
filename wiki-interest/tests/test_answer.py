@@ -76,6 +76,13 @@ class Reminders(unittest.TestCase):
         self.assertNotIn("no word found", text)
         self.assertIn("reason next to each confidence level", text)
 
+    def test_an_inflected_confidence_word_counts(self):
+        # A Haiku run wrote "НИЗЬКІЙ" where the locale has "НИЗЬКА" and was told the level was missing.
+        run = make_run()
+        text = "\n".join(f"{r['code']}: довіра {'ВИСОКІЙ' if r['confidence'] == 'HIGH' else 'СЕРЕДНІЙ'}"
+                         for r in run["rows"] if r["status"] == "ok")
+        self.assertNotIn("no word found", " | ".join(answer.review(text, run)[1]))
+
     def test_causes_are_always_flagged(self):
         self.assertIn("no causes", self.reminders(draft(make_run())))
 

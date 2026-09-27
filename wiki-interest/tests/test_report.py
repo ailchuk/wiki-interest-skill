@@ -27,6 +27,21 @@ def make_run():
             "sort": "confidence", "command": "bash /x/scripts/wi analyze Q1 --langs uk,pl,cs", "rows": M.rank(rows)}
 
 
+def make_basket_run(incomplete=False):
+    """Same run measured as two concepts added together; pl optionally lacks the second one."""
+    run = dict(make_run(), qid="Q1,Q2", topics={"Q1": "Alpha", "Q2": "Beta"})
+    for r in run["rows"]:
+        parts = [{"qid": "Q1", "title": f"Alpha {r['code']}", "proxy": False, "views_per_day": 90.0},
+                 {"qid": "Q2", "title": f"Beta {r['code']}", "proxy": False, "views_per_day": 60.0}]
+        if r["status"] != "ok":
+            parts = []
+        elif incomplete and r["code"] == "pl":
+            parts = parts[:1]
+        r["articles"], r["absent"] = parts, ["Beta"] if len(parts) == 1 else ["Alpha", "Beta"] if not parts else []
+        r["title"] = " + ".join(a["title"] for a in parts) or None
+    return run
+
+
 FINDINGS = """# Test title
 Question: Is interest growing?
 
@@ -108,6 +123,32 @@ class Assumptions(unittest.TestCase):
         text = " ".join(render._assumptions(run, "en"))
         self.assertIn("under 5 views/day = LOW", text)
         self.assertIn("50+ views/day needed for HIGH", text)
+
+
+class Basket(unittest.TestCase):
+    def test_single_article_run_says_nothing_about_baskets(self):
+        text = " ".join(render._assumptions(make_run(), "en"))
+        self.assertNotIn("basket", text)
+
+    def test_basket_is_named(self):
+        text = " ".join(render._assumptions(make_basket_run(), "en"))
+        self.assertIn("basket of 2 concepts (Alpha, Beta)", text)
+        self.assertNotIn("incomplete", text)
+
+    def test_incomplete_basket_names_the_language(self):
+        text = " ".join(render._assumptions(make_basket_run(incomplete=True), "en"))
+        self.assertIn("basket is incomplete in pl", text)
+
+    def test_table_shortens_a_basket(self):
+        _, body = render._table_rows(make_basket_run(), "en")
+        self.assertEqual(body[0][1], "Alpha uk +1")
+
+    def test_a_part_of_the_basket_can_be_cited(self):
+        # 90/day is one article's figure, not the row total: without the breakdown it would be rejected.
+        run = make_basket_run()
+        self.assertEqual(render.check_text("Alpha alone draws 90 views/day.", run), [])
+        self.assertEqual(render.check_text("Alpha alone draws 77 views/day.", run),
+                         ["'77' is not a number the tool printed"])
 
 
 class Pdf(unittest.TestCase):

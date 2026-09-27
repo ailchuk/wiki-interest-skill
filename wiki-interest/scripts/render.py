@@ -190,12 +190,15 @@ def _counts(run):
     """Plain numbers the tool prints: views/day, spike days, month counts and years of the period."""
     out = {12.0, float(len(run["months"]))}
     out |= {float(m[:4]) for m in run["months"]}
+    # Thresholds are printed next to every confidence reason, so quoting them is not an invention.
+    out |= {float(v) for v in run.get("thresholds", DEFAULT_THRESHOLDS).values()}
     for r in run["rows"]:
         if r["status"] != "ok":
             continue
         m = r["metrics"]
         out |= {m["views_per_day"], float(m["months_up"]), float(m["months_down"])}
         out |= {float(s["views"]) for s in m["top_spikes"]} | {float(s["times"]) for s in m["top_spikes"]}
+        out |= {a["views_per_day"] for a in r.get("articles", []) if a.get("views_per_day") is not None}
     return out
 
 
@@ -245,6 +248,8 @@ def allowed_values(run):
                             for y in m.get("yearly", [])[:-1])
             spikes = "".join(f"; spike {s['date']}: {s['views']} views, {s['times']}x normal"
                              for s in m["top_spikes"])
+            if len(r.get("articles", [])) > 1:
+                spikes += "; basket " + " + ".join(f"{a['title']} {a['views_per_day']:g}/day" for a in r["articles"])
             out.append(f"{r['code']}: growth {pct(m['growth'])}, w/o spikes {pct(m['growth_clean'])}, "
                        f"adjusted {pct(m['adj_growth'])}, whole wiki {pct(m['wiki_growth'])}, "
                        f"views/day {m['views_per_day']:.1f}, "
@@ -274,6 +279,12 @@ def _assumptions(run, lang):
              else t(lang, "a_articles", articles=arts))
     out = [first, t(lang, "a_period", start=run["months"][0], end=run["months"][-1]),
            t(lang, "a_filters"), t(lang, "a_spikes"), t(lang, "a_adjusted")]
+    if len(run.get("topics") or {}) > 1:
+        out.append(t(lang, "a_basket", n=len(run["topics"]), topics=", ".join(run["topics"].values())))
+        # Without this the reader would compare a two-article total with a one-article total.
+        short = ", ".join(r["code"] for r in rows if r["status"] == "ok" and r.get("absent"))
+        if short:
+            out.append(t(lang, "a_partial", langs=short))
     # A changed threshold must be stated, or the report would misdescribe how confidence was set.
     th = run.get("thresholds", DEFAULT_THRESHOLDS)
     if th != DEFAULT_THRESHOLDS:
@@ -313,7 +324,10 @@ def _table_rows(run, lang):
             continue
         m = r["metrics"]
         vpd = f"{m['views_per_day']:.1f}" if m["views_per_day"] < 10 else f"{m['views_per_day']:,.0f}"
-        body.append([r["code"], r["title"] + (" *" if r["proxy"] else ""), vpd, pct(m["growth"]),
+        arts = r.get("articles") or []
+        # A whole basket never fits the column; the assumptions block lists it in full.
+        title = f"{arts[0]['title']} +{len(arts) - 1}" if len(arts) > 1 else r["title"]
+        body.append([r["code"], title + (" *" if r["proxy"] else ""), vpd, pct(m["growth"]),
                      pct(m["growth_clean"]), pct(m["adj_growth"]), f"{m['months_up']}/12", t(lang, r["confidence"])])
     return head, body
 

@@ -30,6 +30,23 @@ def run(daily, wiki_monthly=None):
     return m, level, [code for code, _ in reasons]
 
 
+class ViewsPerDay(unittest.TestCase):
+    """Per-article figures in a basket must use the same window as the combined one, or the parts
+    printed next to the total would not add up to it."""
+
+    def test_window_is_the_months_given(self):
+        daily = series(lambda d: 150 if d >= LAST_YEAR_START else 100)
+        self.assertAlmostEqual(M.views_per_day(daily, MONTHS[-12:]), 150.0)
+        self.assertAlmostEqual(M.views_per_day(daily, MONTHS[:12]), 100.0)
+
+    def test_parts_add_up_to_the_sum(self):
+        a, b = series(lambda d: 30), series(lambda d: 12)
+        both = {day: a[day] + b[day] for day in a}
+        last = MONTHS[-12:]
+        self.assertAlmostEqual(M.views_per_day(both, last),
+                               M.views_per_day(a, last) + M.views_per_day(b, last))
+
+
 class Months(unittest.TestCase):
     def test_last_complete_month(self):
         self.assertEqual(M.last_complete_month(date(2026, 9, 26)), "2026-08")

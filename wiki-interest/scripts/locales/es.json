@@ -33,6 +33,8 @@
  "a_spikes": "Pico = día con más de 3 veces sus visitas habituales (mediana de +-14 días); «sin picos» reemplaza esos días por el nivel habitual.",
  "a_adjusted": "«Ajustado» = cambio en la cuota del artículo sobre todas las visitas de esa Wikipedia, para que una caída general del tráfico no se lea como pérdida de interés.",
  "a_thresholds": "Umbrales de confianza elegidos por el usuario en lugar de los predeterminados ({dlow}/{dhigh}): menos de {low} visitas/día = BAJA, para ALTA hacen falta {high}+.",
+ "a_basket": "El tema se mide como una cesta de {n} conceptos ({topics}): las visitas de cada idioma son la suma de sus artículos.",
+ "a_partial": "En {langs} la cesta está incompleta: allí se cuentan menos artículos, así que el total es menor solo por eso.",
  "l_interest": "Las visitas miden curiosidad, no disposición a pagar.",
  "l_country": "Una edición lingüística no es un país: los lectores de un idioma viven en muchos países y muchas personas leen Wikipedia en otros idiomas.",
  "l_proxy": "Un artículo es solo una aproximación al tema; no se cubren artículos relacionados ni otras fuentes (buscadores, asistentes de IA, vídeo).",

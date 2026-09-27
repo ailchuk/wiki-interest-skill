@@ -10,17 +10,21 @@ Run every command as `bash <skill-dir>/scripts/wi <command>`, where `<skill-dir>
 
 ## Workflow
 
-1. **Find the article.**
-   `bash <skill-dir>/scripts/wi find "<topic as the user wrote it>" --langs pl,cs --query-lang uk`
+1. **Find the articles.** Before searching, name the concepts the question covers. A thing is one concept ("astronomy", "intermittent fasting"). An activity is at least two: "learning English" is the language *and* what learners aim at, the IELTS exam. Run `find` once per concept.
+   `bash <skill-dir>/scripts/wi find "<one concept>" --langs pl,cs --query-lang uk`
    - `--langs`: Wikipedia codes (Polish pl, Czech cs, Ukrainian uk, German de, Spanish es, Norwegian no). A wrong code prints the right one.
    - `--query-lang`: language the topic is written in.
    - Pick the candidate that matches the user's meaning. If two fit and the answer would differ, ask the user.
+   - When the user's topic is an activity ("learning English", "вивчення англійської", "getting into astronomy"), it is never one article. Search the subject, then search its exams or courses too ("English language", then "IELTS"), and analyze both as one basket. Measuring only the subject answers a different question than the one asked.
+   - Candidates from a search are rival readings of the same words; items you pass by hand with `--qid Q1,Q2` are parts of one topic.
    - `MISSING` = no article in that language: interest there cannot be measured, say so. Never invent a title. Never replace it with a broader or different topic (e.g. "fasting" for "intermittent fasting") and never compare such a substitute with other languages. Use `--article pl:"Title"` only for the same concept, and call it a proxy.
 2. **Analyze.** Run the `Next:` command printed by `find`. Options: `--months 36` (min 24), `--sort growth|volume`, `--article lang:"Title"`, and `--low-views N` / `--high-views N` when the user says what audience size counts for them (default 20 / 100). Raising `--low-views` also pushes smaller editions to the bottom of the ranking.
+   - `analyze Q1860,Q490396 --langs uk,pl` measures both concepts as one topic: each language's views are the sum of its articles, and the output breaks the sum down per article. Use it for broad intents instead of running `analyze` twice and adding the numbers yourself - a sum you compute is not checked by anything.
+   - A language that has only part of the basket is flagged. Its total is smaller for that reason alone, so name the missing article before you rank or compare it.
 3. **Check, then answer.** Write the draft answer (from the `analyze` output only, see rules) to `answer.md`, then
    `bash <skill-dir>/scripts/wi check <run-dir> --answer answer.md`
-   Rewrite whatever it lists as a problem and check again; work through the `check yourself` list too. Send the answer only after that.
-4. **Report** only when the user asks for a report, PDF or something to share (see below).
+   Rewrite whatever it lists as a problem and check again; read the answer once against the `check yourself` list. Once it passes, **send the text of `answer.md` as your reply, word for word**. Writing a fresh summary instead throws away the only check the user's answer gets, and one `check` on a passing answer is enough.
+4. **Report** whenever the user asks for a report, a PDF, a summary document or something to share - your chat message is not the report, the PDF is (see below). Skip this step only when nothing like that was asked for.
 
 ## How to read `analyze` output
 
@@ -40,7 +44,7 @@ Run every command as `bash <skill-dir>/scripts/wi <command>`, where `<skill-dir>
 - End every answer with limitations: a language edition is not a country; interest is not willingness to pay.
 - Answer in the user's language.
 - Follow-ups (other period, languages, sorting): rerun the printed `Rerun` command with the changed parameter. Data is cached, so this is instant. Run `find` again only for a new topic.
-- Broad intents ("learning English"): analyze 2-3 related articles (e.g. English language Q1860 and IELTS) and say they are proxies.
+- Broad intents ("learning English"): put the 2-3 concepts in one `analyze` as a basket, and say which articles the topic stands for.
 
 ## If a command fails
 
